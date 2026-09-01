@@ -49,6 +49,14 @@ export const bulletin = defineType({
       },
       description: "Upload the .docx bulletin. Leave empty until the file is ready — the site shows a disabled View button until then.",
     }),
+    defineField({
+      name: "pdf",
+      title: "PDF version (recommended — makes View instant)",
+      type: "file",
+      options: { accept: ".pdf,application/pdf" },
+      description:
+        'Optional, but recommended: in Word, use "Save As" → "PDF" (or "Export → Create PDF/XPS") to save a PDF copy of the same bulletin, then upload it here too. Browsers open PDFs instantly with no extra step — without one, "View" falls back to a slower Word-document viewer.',
+    }),
   ],
   preview: {
     select: { title: "title", date: "date", locale: "locale" },

@@ -39,8 +39,10 @@ export type BulletinEntry = {
   date: string;
   title: string;
   scripture?: string;
-  /** Word-doc URL for the in-browser viewer. Unset until the real files are supplied. */
+  /** Word-doc URL, offered for Download and as the View fallback. */
   fileUrl?: string;
+  /** Optional PDF — when present, View uses it directly (instant, native browser rendering). */
+  pdfUrl?: string;
 };
 
 // Bulletin entries themselves now live in Sanity (see lib/sanity/queries.ts)

@@ -6,6 +6,7 @@ type BulletinDoc = {
   title: string;
   scripture?: string;
   fileUrl?: string;
+  pdfUrl?: string;
 };
 
 const BULLETINS_QUERY = /* groq */ `
@@ -13,7 +14,8 @@ const BULLETINS_QUERY = /* groq */ `
     date,
     title,
     scripture,
-    "fileUrl": file.asset->url
+    "fileUrl": file.asset->url,
+    "pdfUrl": pdf.asset->url
   }
 `;
 
@@ -23,6 +25,7 @@ function toEntry(doc: BulletinDoc): BulletinEntry {
     title: doc.title,
     scripture: doc.scripture,
     fileUrl: doc.fileUrl,
+    pdfUrl: doc.pdfUrl,
   };
 }
 

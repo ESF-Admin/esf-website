@@ -43,7 +43,14 @@ export function BulletinRow({ entry }: { entry: BulletinEntry }) {
       {entry.fileUrl ? (
         <div className="flex shrink-0 items-center gap-2">
           <Link
-            href={`/bulletins/view?src=${encodeURIComponent(entry.fileUrl)}&title=${encodeURIComponent(entry.title)}`}
+            href={(() => {
+              // Prefer the PDF — browsers render it natively and instantly.
+              // No PDF yet: fall back to the slower Word-document viewer.
+              const src = entry.pdfUrl ?? entry.fileUrl;
+              const params = new URLSearchParams({ src, title: entry.title });
+              if (entry.pdfUrl) params.set("type", "pdf");
+              return `/bulletins/view?${params.toString()}`;
+            })()}
             className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold transition-colors duration-200 hover:bg-surface-2"
           >
             <Eye aria-hidden className="size-4" />

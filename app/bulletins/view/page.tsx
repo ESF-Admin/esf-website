@@ -20,12 +20,18 @@ function isTrustedFileUrl(url: string) {
 export default async function BulletinViewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ src?: string; title?: string }>;
+  searchParams: Promise<{ src?: string; title?: string; type?: string }>;
 }) {
-  const { src, title } = await searchParams;
+  const { src, title, type } = await searchParams;
   if (!src || !isTrustedFileUrl(src)) notFound();
 
-  const viewerSrc = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(src)}`;
+  // PDFs render instantly in the browser's own viewer — no round trip. Word
+  // documents still need Microsoft's viewer, which is slower (it has to
+  // fetch, convert and stream the file back through their own servers).
+  const viewerSrc =
+    type === "pdf"
+      ? src
+      : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(src)}`;
 
   return (
     <>
