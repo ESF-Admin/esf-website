@@ -6,21 +6,27 @@ import {
   pdfField,
 } from "./shared";
 
-export const bulletin = defineType({
-  name: "bulletin",
-  title: "Bulletin",
+export const sermon = defineType({
+  name: "sermon",
+  title: "Sermon",
   type: "document",
   fields: [
-    ...weeklyDocumentFields("bulletin"),
+    ...weeklyDocumentFields("sermon"),
+    defineField({
+      name: "speaker",
+      title: "Speaker",
+      type: "string",
+      description: "Who preached this message.",
+    }),
     defineField({
       name: "file",
-      title: "Bulletin file (Word document)",
+      title: "Sermon file (Word document)",
       type: "file",
       options: {
         accept:
           ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       },
-      description: "Upload the .docx bulletin (the order of service). Leave empty until the file is ready — the site shows a disabled View button until then.",
+      description: "Upload the .docx sermon manuscript. Leave empty until the file is ready — the site shows a disabled View button until then.",
     }),
     pdfField(),
   ],

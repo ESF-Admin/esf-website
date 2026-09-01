@@ -1,5 +1,5 @@
 import { getSanityClient } from "./client";
-import type { BulletinEntry, BulletinLocale } from "@/lib/content";
+import type { BulletinEntry, SermonEntry, DocLocale } from "@/lib/content";
 
 type BulletinDoc = {
   date: string;
@@ -8,6 +8,8 @@ type BulletinDoc = {
   fileUrl?: string;
   pdfUrl?: string;
 };
+
+type SermonDoc = BulletinDoc & { speaker?: string };
 
 const BULLETINS_QUERY = /* groq */ `
   *[_type == "bulletin" && locale == $locale] | order(date desc) {
@@ -19,24 +21,35 @@ const BULLETINS_QUERY = /* groq */ `
   }
 `;
 
-function toEntry(doc: BulletinDoc): BulletinEntry {
-  return {
-    date: doc.date,
-    title: doc.title,
-    scripture: doc.scripture,
-    fileUrl: doc.fileUrl,
-    pdfUrl: doc.pdfUrl,
-  };
-}
+const SERMONS_QUERY = /* groq */ `
+  *[_type == "sermon" && locale == $locale] | order(date desc) {
+    date,
+    title,
+    scripture,
+    speaker,
+    "fileUrl": file.asset->url,
+    "pdfUrl": pdf.asset->url
+  }
+`;
 
-export async function getBulletins(locale: BulletinLocale): Promise<BulletinEntry[]> {
+export async function getBulletins(locale: DocLocale): Promise<BulletinEntry[]> {
   const client = getSanityClient();
   if (!client) return [];
 
-  const docs = await client.fetch<BulletinDoc[]>(
+  return client.fetch<BulletinDoc[]>(
     BULLETINS_QUERY,
     { locale },
     { next: { tags: ["bulletin"] } },
   );
-  return docs.map(toEntry);
+}
+
+export async function getSermons(locale: DocLocale): Promise<SermonEntry[]> {
+  const client = getSanityClient();
+  if (!client) return [];
+
+  return client.fetch<SermonDoc[]>(
+    SERMONS_QUERY,
+    { locale },
+    { next: { tags: ["sermon"] } },
+  );
 }

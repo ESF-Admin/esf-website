@@ -32,7 +32,16 @@ const missionCountries = [
   "Venezuela",
 ] as const;
 
-export type BulletinLocale = "en" | "es" | "fr";
+export type DocLocale = "en" | "es" | "fr";
+
+// Bulletins and sermons are both weekly-published documents with a
+// date/title/scripture shape, so they share the language list — the nav
+// dropdown and both archive pages' tabs map over this.
+export const docLocales: { code: DocLocale; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+];
 
 export type BulletinEntry = {
   /** ISO date — the single sort key, so the list can never drift out of order. */
@@ -45,19 +54,23 @@ export type BulletinEntry = {
   pdfUrl?: string;
 };
 
-// Bulletin entries themselves now live in Sanity (see lib/sanity/queries.ts)
-// so the church admin can publish a new one every week without a code
-// change. The one-time migration of the original 33 hand-sourced entries
-// lives in scripts/seed-bulletins.ts.
-export const bulletinLocales: { code: BulletinLocale; label: string }[] = [
-  { code: "en", label: "English" },
-  { code: "es", label: "Spanish" },
-  { code: "fr", label: "French" },
-];
+export type SermonEntry = BulletinEntry & {
+  /** Who preached — the sermon's own manuscript, distinct from the bulletin's order-of-service. */
+  speaker?: string;
+};
 
+// Bulletin and sermon entries themselves live in Sanity (see
+// lib/sanity/queries.ts) so the church admin can publish a new one every
+// week without a code change. The one-time migration of the original 33
+// hand-sourced bulletins lives in scripts/seed-bulletins.ts.
 export const bulletins = {
   title: "Bulletins",
   subtitle: "Weekly Sunday service bulletins, most recent first.",
+} as const;
+
+export const sermons = {
+  title: "Sermons",
+  subtitle: "Full sermon messages from our Sunday gatherings, most recent first.",
 } as const;
 
 // Dropdown children are shown on hover/focus (desktop) or as an inline
@@ -67,7 +80,7 @@ export const navLinks: NavLink[] = [
   {
     label: "Bulletins",
     href: "/#bulletins",
-    children: bulletinLocales.map(({ code, label }) => ({
+    children: docLocales.map(({ code, label }) => ({
       label,
       href: `/bulletins?lang=${code}`,
     })),
@@ -90,11 +103,10 @@ export const navLinks: NavLink[] = [
   {
     label: "Sermons",
     href: "/#sermon",
-    children: [
-      { label: "English", href: "/#sermon" },
-      { label: "Spanish", href: "/#sermon" },
-      { label: "French", href: "/#sermon" },
-    ],
+    children: docLocales.map(({ code, label }) => ({
+      label,
+      href: `/sermons?lang=${code}`,
+    })),
   },
   { label: "History", href: "/#history" },
 ] as const;
@@ -175,33 +187,6 @@ export const mission = {
   title: "Our Mission",
   statement:
     "We are dedicated to creating a community of young Christians who are passionate about their faith and eager to make a positive impact on the world. Our mission is to provide a supportive and nurturing environment for people to grow spiritually and equip them to be leaders in their communities.",
-} as const;
-
-export const sermons = {
-  title: "Sermons",
-  subtitle:
-    "Recent messages from our gatherings. Sample entries below show the layout.",
-  placeholder: true,
-  items: [
-    {
-      series: "Sample series",
-      title: "Message title goes here",
-      body: "A short summary of the message and the passage it walks through appears in this space.",
-      meta: "Speaker name · 38 min",
-    },
-    {
-      series: "Sample series",
-      title: "Second message title",
-      body: "A short summary of the message and the passage it walks through appears in this space.",
-      meta: "Speaker name · 41 min",
-    },
-    {
-      series: "Sample series",
-      title: "Third message title",
-      body: "A short summary of the message and the passage it walks through appears in this space.",
-      meta: "Speaker name · 35 min",
-    },
-  ],
 } as const;
 
 export const testimonials = {

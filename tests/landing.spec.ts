@@ -72,9 +72,9 @@ test.describe("ESF landing page", () => {
 
   test("placeholder sections are visibly flagged", async ({ page }) => {
     await page.goto("/");
-    // Ministries, Missions, Sermons and Student Stories each carry a badge.
-    // Bulletins is real data (sourced from the live site) and carries none.
-    await expect(page.getByText("Placeholder content")).toHaveCount(4);
+    // Ministries, Missions and Student Stories each carry a badge.
+    // Bulletins and Sermons are Sanity-backed real data and carry none.
+    await expect(page.getByText("Placeholder content")).toHaveCount(3);
   });
 
   test("bulletins teaser shows the not-yet-published fallback and links to the archive", async ({
@@ -92,6 +92,20 @@ test.describe("ESF landing page", () => {
 
     await section.getByRole("link", { name: /view the full bulletin archive/i }).click();
     await expect(page).toHaveURL(/\/bulletins\?lang=en$/);
+  });
+
+  test("sermons teaser shows the not-yet-published fallback and links to the archive", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const section = page.locator("#sermon");
+
+    await expect(
+      section.getByText(/sermons will appear here once published/i),
+    ).toBeVisible();
+
+    await section.getByRole("link", { name: /view the full sermon archive/i }).click();
+    await expect(page).toHaveURL(/\/sermons\?lang=en$/);
   });
 
   test("nav links exist and scroll to their sections", async ({ page }) => {

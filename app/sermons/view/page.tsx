@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { DocumentViewer } from "@/components/document-viewer";
 
-export const metadata: Metadata = { title: "Bulletin" };
+export const metadata: Metadata = { title: "Sermon" };
 
-export default async function BulletinViewPage({
+export default async function SermonViewPage({
   searchParams,
 }: {
   searchParams: Promise<{ src?: string; title?: string; type?: string }>;
@@ -15,9 +15,9 @@ export default async function BulletinViewPage({
       src={src}
       title={title}
       type={type}
-      backHref="/bulletins?lang=en"
-      backLabel="Back to bulletins"
-      kindLabel="Bulletin"
+      backHref="/sermons?lang=en"
+      backLabel="Back to sermons"
+      kindLabel="Sermon"
     />
   );
 }
