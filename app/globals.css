@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Light — warm violet-indigo primary, amber accent, soft neutral ground */
+:root {
+  --background: #faf9fc;
+  --surface: #ffffff;
+  --surface-2: #f1edf9;
+  --foreground: #1a1625;
+  --muted-foreground: #5b5470;
+  --primary: #4936c2;
+  --primary-hover: #3c2ba3;
+  --on-primary: #ffffff;
+  /* Full-bleed band: stays deep indigo in both themes so dark mode is not blinding. */
+  --band: #241a5c;
+  --on-band: #ffffff;
+  --accent: #d97a06;
+  --accent-soft: #fbeed9;
+  --border: #e4dff2;
+  --ring: #4936c2;
+  --destructive: #b3261e;
+}
+
+.dark {
+  --background: #100c1c;
+  --surface: #191330;
+  --surface-2: #221a3d;
+  --foreground: #f3f0fb;
+  --muted-foreground: #b3a9d1;
+  --primary: #b3a1ff;
+  --primary-hover: #c7b9ff;
+  --on-primary: #17102e;
+  --band: #150e33;
+  --on-band: #f1ecff;
+  --accent: #ffb648;
+  --accent-soft: #2c2214;
+  --border: #322752;
+  --ring: #b3a1ff;
+  --destructive: #f2b8b5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-band: var(--band);
+  --color-on-band: var(--on-band);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+/* Slow drifting gradient behind the hero. Pure transform/opacity work. */
+@keyframes esf-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -3%, 0) scale(1.12);
+  }
+}
+
+.esf-blob {
+  animation: esf-drift 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+.esf-gradient-text {
+  background: linear-gradient(100deg, var(--primary), var(--accent) 65%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .esf-blob {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
