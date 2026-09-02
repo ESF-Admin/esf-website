@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import { Nav } from "@/components/nav";
-import { PdfViewer } from "@/components/pdf-viewer-lazy";
+import { PdfView } from "@/components/pdf-view";
 
 // Only ever embed files we actually host — keeps the viewer routes from
 // being usable as an open redirector/frame for arbitrary third-party URLs.
@@ -64,7 +64,7 @@ export function DocumentViewer({
         </div>
 
         {isPdf ? (
-          <PdfViewer src={src} title={title || kindLabel} />
+          <PdfView src={src} title={title || kindLabel} />
         ) : (
           <iframe
             title={title ? `${kindLabel}: ${title}` : kindLabel}
