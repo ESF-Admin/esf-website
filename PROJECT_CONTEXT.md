@@ -113,8 +113,9 @@ components/
 ├── document-row.tsx           One bulletin/sermon row (shared by teaser + archive)
 ├── document-teaser.tsx        Homepage "latest 3" for bulletins/sermons
 ├── document-archive.tsx       Full /bulletins, /sermons page body
-├── document-viewer.tsx        View-page shell: PDF (react-pdf) or Office iframe + Download
-├── pdf-viewer.tsx             Renders every PDF page to <canvas> via pdf.js
+├── document-viewer.tsx        View-page shell: PdfView (PDF) or Office iframe + Download
+├── pdf-view.tsx                Picks native <iframe> (desktop) vs canvas (mobile) — see §11/§15
+├── pdf-viewer.tsx             Renders every PDF page to <canvas> via pdf.js — mobile only
 ├── pdf-viewer-lazy.tsx        "use client" boundary — required for next/dynamic ssr:false
 ├── sunday-service.tsx         Homepage service-time + map + directions section
 ├── get-directions-button.tsx  Platform-aware Maps deep link (see §11)
@@ -242,9 +243,10 @@ not a REST/GraphQL API consumed by the frontend.
 
 ### Visitor views a document
 `DocumentRow` links to `/{bulletins|sermons}/view?src=...&type=pdf|docx`.
-`DocumentViewer` renders `PdfViewer` (canvas, all pages) for PDFs, or the
-Office Online iframe for `.docx`-only entries. Download opens the raw file
-in a new tab (no forced silent save).
+`DocumentViewer` renders `PdfView` for PDFs — which itself picks a native
+`<iframe>` (desktop, ≥768px) or the canvas-based `PdfViewer` (mobile,
+<768px) — or the Office Online iframe for `.docx`-only entries. Download
+opens the raw file in a new tab (no forced silent save).
 
 ### "Get Directions" (`components/get-directions-button.tsx`)
 No web API exists to detect installed apps, so this uses the accepted
@@ -315,15 +317,22 @@ industry workaround:
 
 ## 15. Important Technical Decisions
 
-**PDF viewing: `react-pdf` (canvas), not an `<iframe>`**
+**PDF viewing: device-specific renderer, not one-size-fits-all**
 Confirmed on the admin's real iPhone: a PDF loaded into a nested `<iframe>`
 only shows page 1 on iOS Safari and never scrolls further — a WebKit
 limitation, not a CSS-fixable bug. `react-pdf`/`pdf.js` renders each page
-to its own `<canvas>` (plain DOM), which scrolls normally everywhere.
-Consequence: pdf.js touches browser-only APIs at module load, so it must
-be lazy-loaded via a dedicated `"use client"` boundary
-(`pdf-viewer-lazy.tsx`) with `next/dynamic(..., { ssr: false })` — Next 16
-rejects `ssr: false` if called directly from a Server Component.
+to its own `<canvas>` (plain DOM), which scrolls normally everywhere — so
+that's used for mobile (`components/pdf-viewer.tsx`, lazy-loaded via the
+`"use client"` boundary `pdf-viewer-lazy.tsx` since pdf.js touches
+browser-only APIs at module load, and Next 16 rejects
+`next/dynamic(..., { ssr: false })` called directly from a Server
+Component).
+On desktop, that same canvas renderer looked cramped — it was capped to a
+fixed max width, tiny on a real monitor. Desktop browsers don't have the
+iOS iframe bug, so a plain `<iframe src={pdf}#view=FitH>` there gets the
+browser's own native PDF viewer for free — full toolbar, zoom, print,
+thumbnails, auto-fit width. `components/pdf-view.tsx` picks between the
+two client-side by viewport width (<768px = mobile).
 
 **`next.config.ts` externalizes only `swr`, not all of `sanity`**
 An earlier attempt externalized the whole `sanity` package to fix a
@@ -406,9 +415,12 @@ pipeline, no new infra), video embeds (YouTube link pattern, no new infra).
   the statically-built homepage (missing ISR revalidate window).
 - Theme defaults to light regardless of OS preference; replaced the stock
   favicon with a branded one.
+- Fixed the PDF viewer looking tiny on desktop (was capped to the same
+  fixed-width canvas renderer used for the iOS fix) — desktop now gets a
+  native `<iframe>` PDF viewer instead (`components/pdf-view.tsx`).
 
 **Files/areas most affected:** `components/document-*.tsx`,
-`components/pdf-viewer*.tsx`, `components/sunday-service.tsx`,
+`components/pdf-view*.tsx`, `components/sunday-service.tsx`,
 `components/get-directions-button.tsx`, `sanity/schemaTypes/*`,
 `app/{ministries,missions,history,contact}/page.tsx`, `lib/content.ts`,
 `components/nav.tsx`.
