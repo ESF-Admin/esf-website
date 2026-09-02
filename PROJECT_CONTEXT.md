@@ -82,8 +82,8 @@ Sanity Studio (/studio, admin-only, authenticated)
 
 External integrations:
 - **Sanity** — CMS + file storage (see §9)
-- **Google Maps** (embed iframe + directions deep links) — no API key, uses
-  the free `output=embed` and `maps/dir` URL formats
+- **Google Maps** (directions deep links only, no embedded preview) — free
+  `maps/dir` URL format, no API key
 - **Microsoft Office Online Viewer** — fallback iframe for `.docx` entries
   that don't yet have a PDF uploaded
 
@@ -117,7 +117,7 @@ components/
 ├── pdf-view.tsx                Picks native <iframe> (desktop) vs canvas (mobile) — see §11/§15
 ├── pdf-viewer.tsx             Renders every PDF page to <canvas> via pdf.js — mobile only
 ├── pdf-viewer-lazy.tsx        "use client" boundary — required for next/dynamic ssr:false
-├── sunday-service.tsx         Homepage service-time + map + directions section
+├── sunday-service.tsx         Homepage service-time + directions section (centered, no map embed)
 ├── get-directions-button.tsx  Platform-aware Maps deep link (see §11)
 ├── {ministries,missions,history}-teaser.tsx   Compact homepage previews, link out to full page
 ├── {ministries,missions,story,contact}.tsx    Full-page content, used only on their own /route
@@ -210,7 +210,7 @@ not a REST/GraphQL API consumed by the frontend.
 |---|---|---|
 | Sanity | CMS + file/asset storage | Project ID `ejhpsslc`, dataset `production` |
 | Vercel | Hosting, CI/CD, ISR | Auto-deploys `main` |
-| Google Maps | Location embed + directions | Free embed/deep-link URLs, no API key |
+| Google Maps | Directions deep links (no embedded preview) | Free `maps/dir` URL, no API key |
 | Microsoft Office Online Viewer | `.docx` fallback viewer | Third-party iframe, used only when no PDF is uploaded yet |
 
 ---
@@ -251,14 +251,22 @@ opens the raw file in a new tab (no forced silent save).
 ### "Get Directions" (`components/get-directions-button.tsx`)
 No web API exists to detect installed apps, so this uses the accepted
 industry workaround:
-- **iOS:** try `comgooglemaps://` custom scheme; if still on-page ~1.2s
-  later (no app handoff happened), fall back to `maps.apple.com`.
+- **iOS:** try `comgooglemaps://` custom scheme; fall back to
+  `maps.apple.com` only if the tab never went hidden (driven by
+  `visibilitychange`, not a fixed timer — a timer alone false-triggers the
+  fallback when Google Maps was already running, since foregrounding an
+  already-open app can take a beat longer than launching it fresh).
 - **Android:** `google.com/maps/dir` — Android's App Links hand off to the
   Google Maps app automatically when installed.
-- **Desktop:** open a blank tab **synchronously** at click time (required —
-  `window.open()` inside an async geolocation callback is popup-blocked),
-  then redirect that tab once geolocation resolves (or without an origin
-  if it doesn't, letting Google Maps prompt the visitor instead).
+- **Desktop:** `window.open()` the Google Maps directions URL
+  synchronously, immediately, in the click handler — no geolocation step.
+  (An earlier version tried to pre-fill the origin via geolocation by
+  opening a blank tab synchronously and redirecting it once the async
+  geolocation call resolved; browsers inconsistently honor a navigation
+  of an already-open window from that kind of async callback, which left
+  a permanently blank tab for some users. Google Maps' own page already
+  offers "use my location" once loaded — that's the right place for that
+  prompt.)
 
 ---
 
@@ -418,6 +426,10 @@ pipeline, no new infra), video embeds (YouTube link pattern, no new infra).
 - Fixed the PDF viewer looking tiny on desktop (was capped to the same
   fixed-width canvas renderer used for the iOS fix) — desktop now gets a
   native `<iframe>` PDF viewer instead (`components/pdf-view.tsx`).
+- Fixed Get Directions opening a blank tab on desktop, and falsely
+  falling back to Apple Maps on iOS when Google Maps was already running;
+  removed the embedded Google Maps preview from Sunday Service and
+  centered its content.
 
 **Files/areas most affected:** `components/document-*.tsx`,
 `components/pdf-view*.tsx`, `components/sunday-service.tsx`,
