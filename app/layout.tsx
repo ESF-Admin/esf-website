@@ -16,7 +16,7 @@ const body = Work_Sans({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://esf.example.org";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://esfworld.us";
 
 // The legacy Wix site ships `noindex`. Indexing stays off until
 // NEXT_PUBLIC_ALLOW_INDEXING=true is set for the production deploy.

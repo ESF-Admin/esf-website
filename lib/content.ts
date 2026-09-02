@@ -9,7 +9,7 @@
 export const org = {
   name: "Evangelical Student Fellowship",
   shortName: "ESF",
-  legalFooterName: "Evangelical Students Fellowship",
+  legalFooterName: "Evangelical Student Fellowship",
   phone: "+1 (773) 802-1112",
   phoneHref: "tel:+17738021112",
   email: "esfcross@yahoo.com",
@@ -99,7 +99,7 @@ export const navLinks: NavLink[] = [
     label: "Ministries",
     href: "/ministries",
     children: [
-      { label: "Adult", href: "/ministries" },
+      { label: "Young Adults", href: "/ministries" },
       { label: "Evangelism", href: "/ministries" },
       { label: "Bible Studies", href: "/ministries" },
       { label: "Youth & Children", href: "/ministries" },
