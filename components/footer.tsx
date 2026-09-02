@@ -1,4 +1,4 @@
-import { Mail, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { navLinks, org } from "@/lib/content";
 import { Socials } from "./socials";
 
@@ -51,19 +51,30 @@ export function Footer() {
             <li>
               <a
                 href={org.phoneHref}
-                className="flex items-center gap-2.5 text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                className="flex items-start gap-2.5 text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
-                <Phone aria-hidden className="size-4 shrink-0 text-accent" />
+                <Phone aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />
                 {org.phone}
               </a>
             </li>
             <li>
               <a
                 href={org.emailHref}
-                className="flex items-center gap-2.5 break-all text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                className="flex items-start gap-2.5 break-all text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
-                <Mail aria-hidden className="size-4 shrink-0 text-accent" />
+                <Mail aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />
                 {org.email}
+              </a>
+            </li>
+            <li>
+              <a
+                href={org.mapUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start gap-2.5 text-muted-foreground transition-colors duration-200 hover:text-foreground"
+              >
+                <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />
+                {org.address}
               </a>
             </li>
           </ul>

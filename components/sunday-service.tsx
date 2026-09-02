@@ -38,9 +38,9 @@ export function SundayService() {
             href={org.mapUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-6 inline-flex cursor-pointer items-center gap-2.5 text-lg leading-snug opacity-90 transition-opacity duration-200 hover:opacity-100"
+            className="mt-6 inline-flex max-w-xs cursor-pointer items-start gap-2.5 text-left text-lg leading-snug opacity-90 transition-opacity duration-200 hover:opacity-100 sm:max-w-none"
           >
-            <MapPin aria-hidden className="size-5 shrink-0" />
+            <MapPin aria-hidden className="mt-0.5 size-5 shrink-0" />
             {org.address}
           </a>
 
