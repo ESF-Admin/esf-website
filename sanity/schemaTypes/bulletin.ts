@@ -4,6 +4,9 @@ import {
   weeklyDocumentOrderings,
   weeklyDocumentPreview,
   pdfField,
+  fileTypeValidator,
+  WORD_MIME_TYPES,
+  WORD_EXTENSIONS,
 } from "./shared";
 
 export const bulletin = defineType({
@@ -21,6 +24,14 @@ export const bulletin = defineType({
           ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       },
       description: "Upload the .docx bulletin (the order of service). Leave empty until the file is ready — the site shows a disabled View button until then.",
+      validation: (rule) =>
+        rule.custom(
+          fileTypeValidator(
+            "Word document (.doc/.docx)",
+            WORD_MIME_TYPES,
+            WORD_EXTENSIONS,
+          ),
+        ),
     }),
     pdfField(),
   ],

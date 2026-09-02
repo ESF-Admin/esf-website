@@ -53,7 +53,7 @@ export function DocumentRow({ entry, viewBasePath }: Props) {
         )}
       </div>
 
-      {entry.fileUrl ? (
+      {entry.fileUrl || entry.pdfUrl ? (
         <Link
           href={(() => {
             // Prefer the PDF — browsers render it natively and instantly.
