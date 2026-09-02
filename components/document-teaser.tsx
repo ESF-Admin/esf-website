@@ -14,6 +14,8 @@ type Props = {
   basePath: string;
   emptyText: string;
   archiveLinkText: string;
+  /** Alternates the section's background with its homepage neighbors. Defaults to tinted. */
+  tinted?: boolean;
 };
 
 /** Homepage teaser (latest 3), shared by Bulletins and Sermons. */
@@ -25,9 +27,10 @@ export function DocumentTeaser({
   basePath,
   emptyText,
   archiveLinkText,
+  tinted = true,
 }: Props) {
   return (
-    <Section id={id} title={title} subtitle={subtitle} tinted>
+    <Section id={id} title={title} subtitle={subtitle} tinted={tinted}>
       {entries.length > 0 ? (
         <RevealGroup
           as="div"

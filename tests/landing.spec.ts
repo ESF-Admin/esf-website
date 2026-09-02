@@ -108,9 +108,10 @@ test.describe("ESF landing page", () => {
     await expect(page).toHaveURL(/\/sermons\?lang=en$/);
   });
 
-  test("nav links exist and scroll to their sections", async ({ page }) => {
-    await page.goto("/");
-
+  test("nav links exist and route to real pages, no hash anchors", async ({
+    page,
+  }) => {
+    await page.goto("/bulletins");
     const nav = page.getByRole("navigation", { name: "Main" });
 
     for (const label of NAV) {
@@ -119,22 +120,38 @@ test.describe("ESF landing page", () => {
       );
     }
 
-    // Follow each top-level link and assert its target section reaches the viewport top.
-    for (const [label, id] of [
-      ["Bulletins", "bulletins"],
-      ["Ministries", "ministries"],
-      ["Missions", "missions"],
-      ["Sermons", "sermon"],
-      ["History", "history"],
+    // Every top-level link is a real route — clicking it must never leave a
+    // "#hash" in the URL, and each destination renders its own heading.
+    for (const [label, path, heading] of [
+      ["Bulletins", "/bulletins", "Bulletins"],
+      ["Ministries", "/ministries", "Ministries"],
+      ["Missions", "/missions", "Missions"],
+      ["Sermons", "/sermons", "Sermons"],
+      ["History", "/history", "Our Story"],
     ] as const) {
       await nav.getByRole("link", { name: label, exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`#${id}$`));
-      await expect
-        .poll(async () =>
-          page.locator(`#${id}`).evaluate((el) => el.getBoundingClientRect().top),
-        )
-        .toBeLessThan(140);
+      await expect(page).toHaveURL(new RegExp(`${path}$`));
+      expect(page.url()).not.toContain("#");
+      await expect(
+        page.getByRole("heading", { level: 1, name: heading }),
+      ).toBeVisible();
     }
+  });
+
+  test("logo and Home link both go to a clean \"/\", no hash", async ({
+    page,
+  }) => {
+    await page.goto("/history");
+    const nav = page.getByRole("navigation", { name: "Main" });
+
+    await nav.getByRole("link", { name: "Home", exact: true }).click();
+    await expect(page).toHaveURL(/\/$/);
+    expect(page.url()).not.toContain("#");
+
+    await page.goto("/history");
+    await page.getByRole("link", { name: /— home$/ }).click();
+    await expect(page).toHaveURL(/\/$/);
+    expect(page.url()).not.toContain("#");
   });
 
   test("Bulletins and Sermons expose language dropdowns on hover", async ({
@@ -191,7 +208,7 @@ test.describe("ESF landing page", () => {
   test("contact form shows validation errors and then submits", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/contact");
 
     const form = page.getByRole("form", { name: "Contact form" });
     await form.getByRole("button", { name: "Send message" }).click();
@@ -278,7 +295,8 @@ test.describe("mobile layout", () => {
     await expect(contactCta).toBeVisible();
 
     await contactCta.click();
-    await expect(page).toHaveURL(/#contact$/);
+    await expect(page).toHaveURL(/\/contact$/);
+    expect(page.url()).not.toContain("#");
 
     expect(errors).toEqual([]);
   });

@@ -12,6 +12,7 @@ export function Ministries() {
       title={ministries.title}
       subtitle={ministries.subtitle}
       placeholder={ministries.placeholder}
+      headingLevel="h1"
       tinted
     >
       <RevealGroup as="div" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

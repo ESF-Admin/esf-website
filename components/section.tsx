@@ -21,6 +21,8 @@ type Props = {
   className?: string;
   /** Renders the section on the raised surface tone instead of page background. */
   tinted?: boolean;
+  /** "h1" when this Section is a standalone page's only heading; "h2" (default) when nested under a page that already has its own h1 (e.g. a homepage teaser under Hero). */
+  headingLevel?: "h1" | "h2";
 };
 
 export function Section({
@@ -32,7 +34,9 @@ export function Section({
   children,
   className = "",
   tinted,
+  headingLevel = "h2",
 }: Props) {
+  const Heading = headingLevel;
   return (
     <section
       id={id}
@@ -51,12 +55,12 @@ export function Section({
               {eyebrow}
             </p>
           )}
-          <h2
+          <Heading
             id={`${id}-heading`}
             className="text-3xl font-semibold text-balance sm:text-4xl md:text-[2.75rem]"
           >
             {title}
-          </h2>
+          </Heading>
           {subtitle && (
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
               {subtitle}

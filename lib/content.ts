@@ -65,21 +65,22 @@ export type SermonEntry = BulletinEntry & {
 // hand-sourced bulletins lives in scripts/seed-bulletins.ts.
 export const bulletins = {
   title: "Bulletins",
-  subtitle: "Weekly Sunday service bulletins, most recent first.",
+  subtitle: "Weekly Sunday service bulletins.",
 } as const;
 
 export const sermons = {
   title: "Sermons",
-  subtitle: "Full sermon messages from our Sunday gatherings, most recent first.",
+  subtitle: "Full sermon messages from our Sunday gatherings.",
 } as const;
 
-// Dropdown children are shown on hover/focus (desktop) or as an inline
-// disclosure list (mobile).
+// Every top-level link is a real route — no "/#section" hash anchors. Dropdown
+// children are shown on hover/focus (desktop) or as an inline disclosure list
+// (mobile).
 export const navLinks: NavLink[] = [
-  { label: "Home", href: "/#home" },
+  { label: "Home", href: "/" },
   {
     label: "Bulletins",
-    href: "/#bulletins",
+    href: "/bulletins",
     children: docLocales.map(({ code, label }) => ({
       label,
       href: `/bulletins?lang=${code}`,
@@ -87,36 +88,36 @@ export const navLinks: NavLink[] = [
   },
   {
     label: "Ministries",
-    href: "/#ministries",
+    href: "/ministries",
     children: [
-      { label: "Adult", href: "/#ministries" },
-      { label: "Evangelism", href: "/#ministries" },
-      { label: "Bible Studies", href: "/#ministries" },
-      { label: "Youth & Children", href: "/#ministries" },
+      { label: "Adult", href: "/ministries" },
+      { label: "Evangelism", href: "/ministries" },
+      { label: "Bible Studies", href: "/ministries" },
+      { label: "Youth & Children", href: "/ministries" },
     ],
   },
   {
     label: "Missions",
-    href: "/#missions",
-    children: missionCountries.map((label) => ({ label, href: "/#missions" })),
+    href: "/missions",
+    children: missionCountries.map((label) => ({ label, href: "/missions" })),
   },
   {
     label: "Sermons",
-    href: "/#sermon",
+    href: "/sermons",
     children: docLocales.map(({ code, label }) => ({
       label,
       href: `/sermons?lang=${code}`,
     })),
   },
-  { label: "History", href: "/#history" },
+  { label: "History", href: "/history" },
 ] as const;
 
 export const hero = {
   eyebrow: "Campus ministry since 1976",
   title: "Welcome to ESF",
   body: "Evangelical Student Fellowship is an international Christian student ministry active on college and university campuses worldwide, and a multi-ethnic ministry in Chicago.",
-  primaryCta: { label: "Join our community", href: "/#contact" },
-  secondaryCta: { label: "Read our story", href: "/#history" },
+  primaryCta: { label: "Join our community", href: "/contact" },
+  secondaryCta: { label: "Read our story", href: "/history" },
 } as const;
 
 export const ministries = {

@@ -4,7 +4,7 @@ import { RevealGroup, RevealItem } from "./reveal";
 
 export function Story() {
   return (
-    <Section id="history" eyebrow={story.tagline} title={story.title}>
+    <Section id="history" eyebrow={story.tagline} title={story.title} headingLevel="h1">
       <div className="grid gap-14 lg:grid-cols-[minmax(0,26rem)_1fr]">
         <div className="space-y-5">
           {story.paragraphs.map((p) => (

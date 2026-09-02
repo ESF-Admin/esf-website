@@ -1,13 +1,13 @@
 import { Nav } from "@/components/nav";
 import { Hero } from "@/components/hero";
-import { Story } from "@/components/story";
 import { Mission } from "@/components/mission";
 import { Bulletins } from "@/components/bulletins";
-import { Ministries } from "@/components/ministries";
-import { Missions } from "@/components/missions";
+import { MinistriesTeaser } from "@/components/ministries-teaser";
+import { MissionsTeaser } from "@/components/missions-teaser";
 import { Sermons } from "@/components/sermons";
+import { HistoryTeaser } from "@/components/history-teaser";
 import { Testimonials } from "@/components/testimonials";
-import { ContactSection } from "@/components/contact";
+import { ContactCta } from "@/components/contact-cta";
 import { Footer } from "@/components/footer";
 import { mission, org } from "@/lib/content";
 
@@ -35,13 +35,13 @@ export default function Home() {
       <main id="main">
         <Hero />
         <Bulletins />
-        <Ministries />
-        <Missions />
+        <MinistriesTeaser />
+        <MissionsTeaser />
         <Sermons />
-        <Story />
+        <HistoryTeaser />
         <Mission />
         <Testimonials />
-        <ContactSection />
+        <ContactCta />
       </main>
       <Footer />
     </>

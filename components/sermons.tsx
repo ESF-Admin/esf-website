@@ -14,6 +14,7 @@ export async function Sermons() {
       basePath="/sermons"
       emptyText="Sermons will appear here once published."
       archiveLinkText="View the full sermon archive"
+      tinted={false}
     />
   );
 }

@@ -70,7 +70,7 @@ export function ContactSection() {
   };
 
   return (
-    <Section id="contact" title={contact.title} subtitle={contact.subtitle}>
+    <Section id="contact" title={contact.title} subtitle={contact.subtitle} headingLevel="h1">
       <div className="grid gap-12 lg:grid-cols-[1fr_minmax(0,22rem)]">
         <form
           ref={formRef}

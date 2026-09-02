@@ -10,6 +10,7 @@ export function Missions() {
       title={missions.title}
       subtitle={missions.subtitle}
       placeholder={missions.placeholder}
+      headingLevel="h1"
     >
       <RevealGroup
         as="ul"

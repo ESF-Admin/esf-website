@@ -39,7 +39,11 @@ export async function getBulletins(locale: DocLocale): Promise<BulletinEntry[]> 
   return client.fetch<BulletinDoc[]>(
     BULLETINS_QUERY,
     { locale },
-    { next: { tags: ["bulletin"] } },
+    // revalidate is a 60s safety net; the Sanity webhook (see
+    // app/api/revalidate/route.ts) calls revalidateTag for near-instant
+    // updates on publish/delete — without either, a statically-rendered
+    // page (like "/") would keep whatever it fetched at build time forever.
+    { next: { tags: ["bulletin"], revalidate: 60 } },
   );
 }
 
@@ -50,6 +54,6 @@ export async function getSermons(locale: DocLocale): Promise<SermonEntry[]> {
   return client.fetch<SermonDoc[]>(
     SERMONS_QUERY,
     { locale },
-    { next: { tags: ["sermon"] } },
+    { next: { tags: ["sermon"], revalidate: 60 } },
   );
 }
