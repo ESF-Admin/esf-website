@@ -1,5 +1,6 @@
 import { Nav } from "@/components/nav";
 import { Hero } from "@/components/hero";
+import { SundayService } from "@/components/sunday-service";
 import { Mission } from "@/components/mission";
 import { Bulletins } from "@/components/bulletins";
 import { MinistriesTeaser } from "@/components/ministries-teaser";
@@ -21,6 +22,7 @@ const jsonLd = {
   description: mission.statement,
   email: org.email,
   telephone: org.phone,
+  address: org.address,
   areaServed: "Chicago, Illinois and college campuses worldwide",
 };
 
@@ -34,6 +36,7 @@ export default function Home() {
       <Nav />
       <main id="main">
         <Hero />
+        <SundayService />
         <Bulletins />
         <MinistriesTeaser />
         <MissionsTeaser />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { CheckCircle2, Mail, Phone } from "lucide-react";
+import { CheckCircle2, Mail, MapPin, Phone } from "lucide-react";
 import { contact, org } from "@/lib/content";
 import { Section } from "./section";
 import { Socials } from "./socials";
@@ -176,6 +176,17 @@ export function ContactSection() {
                   <span className="font-medium break-all text-foreground">
                     {org.email}
                   </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href={org.mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-start gap-3 text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                >
+                  <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-accent" />
+                  <span className="font-medium text-foreground">{org.address}</span>
                 </a>
               </li>
             </ul>

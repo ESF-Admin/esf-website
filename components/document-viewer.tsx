@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import { Nav } from "@/components/nav";
+import { PdfViewer } from "@/components/pdf-viewer-lazy";
 
 // Only ever embed files we actually host — keeps the viewer routes from
 // being usable as an open redirector/frame for arbitrary third-party URLs.
@@ -34,14 +35,7 @@ export function DocumentViewer({
   kindLabel = "Document",
 }: Props) {
   if (!src || !isTrustedFileUrl(src)) notFound();
-
-  // PDFs render instantly in the browser's own viewer — no round trip. Word
-  // documents still need Microsoft's viewer, which is slower (it has to
-  // fetch, convert and stream the file back through their own servers).
-  const viewerSrc =
-    type === "pdf"
-      ? src
-      : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(src)}`;
+  const isPdf = type === "pdf";
 
   return (
     <>
@@ -60,7 +54,8 @@ export function DocumentViewer({
           </p>
           <a
             href={src}
-            download
+            target="_blank"
+            rel="noreferrer"
             className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:bg-surface-2"
           >
             <Download aria-hidden className="size-4" />
@@ -68,11 +63,15 @@ export function DocumentViewer({
           </a>
         </div>
 
-        <iframe
-          title={title ? `${kindLabel}: ${title}` : kindLabel}
-          src={viewerSrc}
-          className="min-h-0 flex-1"
-        />
+        {isPdf ? (
+          <PdfViewer src={src} title={title || kindLabel} />
+        ) : (
+          <iframe
+            title={title ? `${kindLabel}: ${title}` : kindLabel}
+            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(src)}`}
+            className="min-h-0 flex-1"
+          />
+        )}
       </main>
     </>
   );

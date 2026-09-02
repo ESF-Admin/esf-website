@@ -14,7 +14,16 @@ export const org = {
   phoneHref: "tel:+17738021112",
   email: "esfcross@yahoo.com",
   emailHref: "mailto:esfcross@yahoo.com",
+  address: "6050 W Touhy Ave, Chicago, IL 60646",
+  // ESF's Google Maps listing — "view on map" links go straight here.
+  mapUrl: "https://maps.app.goo.gl/TYYifGbsa6AK7YK9A",
   copyrightYear: 2026,
+} as const;
+
+export const service = {
+  day: "Sunday",
+  time: "11:30 AM",
+  note: "Join us in-person.",
 } as const;
 
 export type NavChild = { label: string; href: string };
