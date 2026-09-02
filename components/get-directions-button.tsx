@@ -16,27 +16,50 @@ function isAndroid() {
 }
 
 /**
- * Platform-aware directions link. There's no web API to ask "is app X
- * installed" — the iOS branch uses the standard workaround: try Google
- * Maps' own custom URL scheme, and if the tab is still visible a moment
- * later (the OS never handed off to an app), fall back to Apple Maps,
- * which is always present. Android and desktop don't need a fallback:
- * Android's Google Maps App Links degrade to the website automatically,
- * and desktop opens Google Maps in a new tab either way.
+ * Platform-aware directions link.
+ *
+ * iOS: there's no web API to ask "is app X installed", so this uses the
+ * standard workaround — try Google Maps' custom URL scheme, and only fall
+ * back to Apple Maps if the OS never handed off to an app. The fallback
+ * is driven by `visibilitychange`, not a fixed timer: a timer alone can
+ * misfire when Google Maps is already running (bringing an already-open
+ * app to the foreground can take a beat longer than launching it fresh),
+ * firing the Apple Maps fallback even though the handoff was about to
+ * succeed. Watching for the tab actually going hidden — however long
+ * that takes, up to a generous cap — fixes that false fallback.
+ *
+ * Android hands off to the Google Maps app automatically via App Links;
+ * no fallback needed.
+ *
+ * Desktop: opens Google Maps directions synchronously, in the same tick
+ * as the click. An earlier version tried to fetch geolocation first and
+ * redirect an already-opened blank tab once it resolved — window.open()
+ * must happen inside the click's own call stack to avoid being
+ * popup-blocked, and browsers are inconsistent about honoring a
+ * *navigation* of that tab from later, asynchronous code (some silently
+ * drop it, leaving a permanently blank tab — which is exactly what broke
+ * before). Opening the final URL immediately sidesteps that whole class
+ * of failure. Google Maps' own page already offers "use my location" —
+ * that's the one place a location prompt belongs.
  */
 function openDirections(address: string) {
   const encoded = encodeURIComponent(address);
 
   if (isIOS()) {
-    const before = Date.now();
+    let handedOff = false;
+    const onHide = () => {
+      handedOff = true;
+    };
+    document.addEventListener("visibilitychange", onHide, { once: true });
+
     window.location.href = `comgooglemaps://?daddr=${encoded}&x-source=ESF+Website`;
+
     setTimeout(() => {
-      // Only fall back if we're still here — a successful handoff to the
-      // Google Maps app backgrounds this tab, pausing this timer with it.
-      if (Date.now() - before < 2000) {
+      document.removeEventListener("visibilitychange", onHide);
+      if (!handedOff) {
         window.location.href = `https://maps.apple.com/?daddr=${encoded}&dirflg=d`;
       }
-    }, 1200);
+    }, 1500);
     return;
   }
 
@@ -45,41 +68,10 @@ function openDirections(address: string) {
     return;
   }
 
-  // Desktop: ask for the visitor's location right at the click (not on page
-  // load) to pre-fill the starting point; Google Maps itself handles the
-  // "enter your location" flow if permission is denied or unavailable.
-  //
-  // window.open() must run synchronously inside the click handler or
-  // browsers silently block it as a popup — geolocation is async, so we
-  // can't wait for it before opening. Instead, open the tab right now (it's
-  // still inside the click's call stack) and redirect that already-open
-  // window once we know the origin; redirecting an existing window isn't
-  // subject to popup blocking.
-  const tab = window.open("", "_blank", "noreferrer");
-  const goTo = (origin?: string) => {
-    const params = new URLSearchParams({ api: "1", destination: address });
-    if (origin) params.set("origin", origin);
-    const url = `https://www.google.com/maps/dir/?${params}`;
-    if (tab) tab.location.href = url;
-    else window.open(url, "_blank", "noreferrer");
-  };
-
-  if (!navigator.geolocation) {
-    goTo();
-    return;
-  }
-
-  const fallback = setTimeout(() => goTo(), 2500);
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      clearTimeout(fallback);
-      goTo(`${pos.coords.latitude},${pos.coords.longitude}`);
-    },
-    () => {
-      clearTimeout(fallback);
-      goTo();
-    },
-    { timeout: 2500 },
+  window.open(
+    `https://www.google.com/maps/dir/?api=1&destination=${encoded}`,
+    "_blank",
+    "noopener,noreferrer",
   );
 }
 
