@@ -3,7 +3,7 @@ import { getBulletins } from "@/lib/sanity/queries";
 import { DocumentTeaser } from "./document-teaser";
 
 export async function Bulletins() {
-  const latest = (await getBulletins("en")).slice(0, 3);
+  const latest = (await getBulletins("en")).entries.slice(0, 3);
 
   return (
     <DocumentTeaser

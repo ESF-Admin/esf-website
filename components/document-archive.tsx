@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { DocumentRow } from "@/components/document-row";
 import { docLocales, type BulletinEntry, type DocLocale, type SermonEntry } from "@/lib/content";
+import { DOCS_PER_PAGE } from "@/lib/sanity/queries";
 
 type Props = {
   eyebrow: string;
@@ -14,6 +16,10 @@ type Props = {
   tabsLabel: string;
   active: DocLocale;
   entries: (BulletinEntry | SermonEntry)[];
+  /** Total entries across all pages, for computing page count. */
+  total: number;
+  /** Current 1-indexed page. */
+  page: number;
   emptyText: string;
 };
 
@@ -26,8 +32,12 @@ export function DocumentArchive({
   tabsLabel,
   active,
   entries,
+  total,
+  page,
   emptyText,
 }: Props) {
+  const pageCount = Math.max(1, Math.ceil(total / DOCS_PER_PAGE));
+  const pageHref = (p: number) => `${basePath}?lang=${active}&page=${p}`;
   return (
     <>
       <Nav />
@@ -78,6 +88,39 @@ export function DocumentArchive({
               </p>
             )}
           </div>
+
+          {pageCount > 1 && (
+            <nav
+              aria-label="Pagination"
+              className="mt-8 flex items-center justify-between gap-4"
+            >
+              {page > 1 ? (
+                <Link
+                  href={pageHref(page - 1)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:bg-surface-2"
+                >
+                  <ChevronLeft aria-hidden className="size-4" />
+                  Previous
+                </Link>
+              ) : (
+                <span />
+              )}
+              <p className="text-sm text-muted-foreground">
+                Page {page} of {pageCount}
+              </p>
+              {page < pageCount ? (
+                <Link
+                  href={pageHref(page + 1)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:bg-surface-2"
+                >
+                  Next
+                  <ChevronRight aria-hidden className="size-4" />
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          )}
         </div>
       </main>
       <Footer />

@@ -16,11 +16,12 @@ function isLocale(value: string | undefined): value is DocLocale {
 export default async function SermonsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; page?: string }>;
 }) {
-  const { lang } = await searchParams;
+  const { lang, page: pageParam } = await searchParams;
   const active: DocLocale = isLocale(lang) ? lang : "en";
-  const entries = await getSermons(active);
+  const page = Math.max(1, Number(pageParam) || 1);
+  const { entries, total } = await getSermons(active, page);
 
   return (
     <DocumentArchive
@@ -31,6 +32,8 @@ export default async function SermonsPage({
       tabsLabel="Sermon language"
       active={active}
       entries={entries}
+      total={total}
+      page={page}
       emptyText="No sermons have been published in this language yet."
     />
   );

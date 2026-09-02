@@ -3,7 +3,7 @@ import { getSermons } from "@/lib/sanity/queries";
 import { DocumentTeaser } from "./document-teaser";
 
 export async function Sermons() {
-  const latest = (await getSermons("en")).slice(0, 3);
+  const latest = (await getSermons("en")).entries.slice(0, 3);
 
   return (
     <DocumentTeaser
