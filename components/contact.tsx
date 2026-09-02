@@ -42,7 +42,10 @@ export function ContactSection() {
   const [values, setValues] = useState(empty);
   const [errors, setErrors] = useState<Errors>({});
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const honeypotRef = useRef<HTMLInputElement>(null);
 
   const set = (field: Field, value: string) => {
     setValues((v) => ({ ...v, [field]: value }));
@@ -52,10 +55,11 @@ export function ContactSection() {
     }
   };
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const found = validate(values);
     setErrors(found);
+    setSendError(null);
 
     const first = (Object.keys(found) as Field[])[0];
     if (first) {
@@ -64,9 +68,27 @@ export function ContactSection() {
       return;
     }
 
-    // ponytail: no backend yet — swap this for a POST to /api/contact.
-    setSent(true);
-    setValues(empty);
+    setSending(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...values, company: honeypotRef.current?.value }),
+      });
+      const data: { ok?: boolean; error?: string } = await res.json();
+      if (!res.ok || !data.ok) {
+        setSendError(data.error || "Something went wrong. Please try again.");
+        setSent(false);
+        return;
+      }
+      setSent(true);
+      setValues(empty);
+    } catch {
+      setSendError("Something went wrong. Please try again.");
+      setSent(false);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -79,6 +101,17 @@ export function ContactSection() {
           aria-label="Contact form"
           className="rounded-2xl border border-border bg-surface p-7 sm:p-9"
         >
+          {/* Honeypot — hidden from real visitors, bots fill every field. */}
+          <input
+            ref={honeypotRef}
+            type="text"
+            name="company"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="absolute left-[-9999px] h-0 w-0 opacity-0"
+          />
+
           <div className="grid gap-6 sm:grid-cols-2">
             <TextField
               name="name"
@@ -127,9 +160,10 @@ export function ContactSection() {
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <button
               type="submit"
-              className="cursor-pointer rounded-full bg-gradient-to-r from-primary to-accent px-7 py-3.5 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110"
+              disabled={sending}
+              className="cursor-pointer rounded-full bg-gradient-to-r from-primary to-accent px-7 py-3.5 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              Send message
+              {sending ? "Sending…" : "Send message"}
             </button>
             <p className="text-sm text-muted-foreground">
               <span aria-hidden className="text-destructive">
@@ -152,6 +186,12 @@ export function ContactSection() {
               </>
             )}
           </p>
+
+          {sendError && (
+            <p role="alert" className="mt-6 text-sm font-medium text-destructive">
+              {sendError}
+            </p>
+          )}
         </form>
 
         <div className="space-y-8">
