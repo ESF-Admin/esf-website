@@ -179,7 +179,7 @@ test.describe("ESF landing page", () => {
     await item.hover();
     const menu = item.locator("xpath=../div").first();
 
-    for (const label of ["Adult", "Evangelism", "Bible Studies", "Youth & Children"]) {
+    for (const label of ["Young Adults", "Evangelism", "Bible Studies", "Youth & Children"]) {
       await expect(menu.getByRole("link", { name: label })).toBeVisible();
     }
   });
@@ -208,6 +208,11 @@ test.describe("ESF landing page", () => {
   test("contact form shows validation errors and then submits", async ({
     page,
   }) => {
+    // /api/contact needs a real RESEND_API_KEY to actually send — mock it
+    // here so this test verifies the form's own submit flow, not Resend.
+    await page.route("/api/contact", (route) =>
+      route.fulfill({ status: 200, json: { ok: true } }),
+    );
     await page.goto("/contact");
 
     const form = page.getByRole("form", { name: "Contact form" });

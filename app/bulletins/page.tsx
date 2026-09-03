@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { DocumentArchive } from "@/components/document-archive";
 import { docLocales, type DocLocale } from "@/lib/content";
 import { getBulletins } from "@/lib/sanity/queries";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Bulletins",
   description:
     "The full archive of ESF Sunday service bulletins, most recent first.",
-};
+  path: "/bulletins",
+});
 
 function isLocale(value: string | undefined): value is DocLocale {
   return docLocales.some((l) => l.code === value);

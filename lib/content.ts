@@ -136,7 +136,7 @@ export const ministries = {
   placeholder: true,
   items: [
     {
-      name: "Adult",
+      name: "Young Adults",
       body: "Fellowship and discipleship for graduate students, working professionals and alumni.",
     },
     {
