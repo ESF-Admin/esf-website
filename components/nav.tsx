@@ -69,7 +69,7 @@ export function Nav() {
           </span>
         </Link>
 
-        <ul className="hidden items-center gap-1 md:flex">
+        <ul className="hidden items-center gap-1 lg:flex">
           {navLinks.map((link) => (
             <DesktopItem key={link.href} link={link} pathname={pathname} />
           ))}
@@ -79,7 +79,7 @@ export function Nav() {
           <ThemeToggle />
           <Link
             href="/contact"
-            className="hidden cursor-pointer rounded-full bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-on-primary shadow-md shadow-primary/20 transition-[filter,transform] duration-200 hover:brightness-110 lg:inline-block"
+            className="hidden cursor-pointer rounded-full bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-on-primary shadow-md shadow-primary/20 outline-none transition-[filter,transform] duration-200 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-primary/50 lg:inline-block"
           >
             Get in touch
           </Link>
@@ -89,7 +89,7 @@ export function Nav() {
             aria-expanded={open}
             aria-controls="mobile-menu"
             aria-label={open ? "Close menu" : "Open menu"}
-            className="grid size-11 cursor-pointer place-items-center rounded-full border border-border bg-surface md:hidden"
+            className="grid size-11 cursor-pointer place-items-center rounded-full border border-border bg-surface outline-none transition-colors duration-200 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary/50 lg:hidden"
           >
             {open ? (
               <X aria-hidden className="size-5" />
@@ -108,7 +108,7 @@ export function Nav() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            className="overflow-hidden border-t border-border bg-background/95 backdrop-blur-xl md:hidden"
+            className="overflow-hidden border-t border-border bg-background/95 backdrop-blur-xl lg:hidden"
           >
             <ul className="mx-auto flex max-h-[70vh] max-w-6xl flex-col gap-1 overflow-y-auto px-5 py-4">
               {navLinks.map((link) => {
@@ -197,15 +197,17 @@ function DesktopItem({ link, pathname }: { link: NavLink; pathname: string }) {
         href={link.href}
         aria-current={isActive ? "true" : undefined}
         aria-haspopup={link.children ? "true" : undefined}
-        className={`relative flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-          isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+        className={`relative flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+          isActive
+            ? "text-primary"
+            : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
         }`}
       >
         {isActive && (
           <motion.span
             layoutId="nav-pill"
             aria-hidden
-            className="absolute inset-0 -z-10 rounded-full bg-surface-2"
+            className="absolute inset-0 -z-10 rounded-full bg-surface-2 ring-1 ring-primary/15"
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
           />
         )}
