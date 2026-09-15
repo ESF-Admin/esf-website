@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 
-// No Sanity project is configured in this environment (NEXT_PUBLIC_SANITY_PROJECT_ID
-// unset), so getSanityClient() returns null and every locale renders the
-// empty state. These tests cover the page shell, tab navigation and the
-// nav → archive route wiring — the content itself is exercised once a real
-// Sanity project is provisioned (see .env.local.example).
+// This suite runs against whatever Sanity project .env.local points at.
+// English has real published bulletins (33 migrated from the prior site);
+// Spanish and French are schema-ready with zero entries (see
+// PROJECT_CONTEXT.md §16) — so the two locale groups exercise genuinely
+// different states rather than assuming the project is unconfigured.
 test.describe("Bulletins archive page", () => {
   test("renders the page shell and language tabs", async ({ page }) => {
     await page.goto("/bulletins?lang=en");
@@ -24,11 +24,28 @@ test.describe("Bulletins archive page", () => {
     );
   });
 
-  test("every locale shows the not-yet-published empty state", async ({
+  test("English shows real published bulletins, not the empty state", async ({
+    page,
+  }) => {
+    await page.goto("/bulletins?lang=en");
+    await expect(page.getByRole("tab", { name: "English" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      page.getByText(/no bulletins have been published in this language yet/i),
+    ).not.toBeVisible();
+    // At least one real entry rendered — checked structurally (a document
+    // row's title heading), not against a specific bulletin's title/date,
+    // since new bulletins are published weekly and old ones may roll off
+    // the current page.
+    await expect(page.getByRole("heading", { level: 3 }).first()).toBeVisible();
+  });
+
+  test("Spanish and French show the not-yet-published empty state", async ({
     page,
   }) => {
     for (const [lang, label] of [
-      ["en", "English"],
       ["es", "Spanish"],
       ["fr", "French"],
     ] as const) {

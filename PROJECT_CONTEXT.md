@@ -482,6 +482,25 @@ scope per the approved plan.
 
 ## 18. Recent Changes
 
+### 2026-09-15 — Playwright suite fixed to match real content
+`tests/bulletins.spec.ts` and `tests/sermons.spec.ts` had asserted an
+empty-state fallback on the documented assumption that no Sanity project
+was configured in the test environment. That's no longer true: `.env.local`
+points at the real project, English now has 32 real bulletins and 1 real
+sermon (Spanish/French are still genuinely empty — schema-ready, zero
+entries). Split each "every locale" test into an English case (asserts the
+empty text is absent and at least one real entry renders — checked
+structurally via a document row's `<h3>` heading, not a hardcoded
+title/date, since content changes weekly) and an ES/FR case (asserts the
+empty state, which is still accurate there). Same fix applied to the two
+homepage-teaser tests in `tests/landing.spec.ts`, which pull from the same
+`getBulletins`/`getSermons` calls. Also fixed a wording typo in
+`tests/landing.spec.ts`'s copyright assertion — it expected "Evangelical
+Student**s** Fellowship," but the real legal name used everywhere else in
+the codebase (`lib/content.ts`, `README.md`, page titles, meta
+descriptions) is "Evangelical Student Fellowship" with no "s"; the test
+was wrong, not the content. All 31 Playwright tests now pass.
+
 ### 2026-09-15 — CMS migration Phase 0 (infra, no visible change)
 - Added `@sanity/image-url` as an explicit dependency (was only
   transitive); added `images.remotePatterns` for `cdn.sanity.io` to

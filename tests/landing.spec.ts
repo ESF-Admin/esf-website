@@ -66,7 +66,7 @@ test.describe("ESF landing page", () => {
     await expect(page.getByRole("link", { name: /\+1 \(773\) 802-1112/ }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /esfcross@yahoo\.com/ }).first()).toBeVisible();
     await expect(
-      page.getByText("© 2026 Evangelical Students Fellowship"),
+      page.getByText("© 2026 Evangelical Student Fellowship"),
     ).toBeVisible();
   });
 
@@ -77,32 +77,36 @@ test.describe("ESF landing page", () => {
     await expect(page.getByText("Placeholder content")).toHaveCount(3);
   });
 
-  test("bulletins teaser shows the not-yet-published fallback and links to the archive", async ({
+  test("bulletins teaser shows real entries and links to the archive", async ({
     page,
   }) => {
-    // No Sanity project is configured in this environment, so the teaser
-    // renders its empty state rather than real entries — see tests/bulletins.spec.ts
-    // for the data-bearing assertions once a real project is wired up.
+    // English has real published bulletins in whatever Sanity project
+    // .env.local points at (see tests/bulletins.spec.ts) — the teaser
+    // pulls from the same source, so it renders real rows, not the empty
+    // state, checked structurally rather than against a specific title.
     await page.goto("/");
     const section = page.locator("#bulletins");
 
     await expect(
       section.getByText(/bulletins will appear here once published/i),
-    ).toBeVisible();
+    ).not.toBeVisible();
+    await expect(section.getByRole("heading", { level: 3 }).first()).toBeVisible();
 
     await section.getByRole("link", { name: /view the full bulletin archive/i }).click();
     await expect(page).toHaveURL(/\/bulletins\?lang=en$/);
   });
 
-  test("sermons teaser shows the not-yet-published fallback and links to the archive", async ({
+  test("sermons teaser shows real entries and links to the archive", async ({
     page,
   }) => {
+    // English has at least one real published sermon — see tests/sermons.spec.ts.
     await page.goto("/");
     const section = page.locator("#sermon");
 
     await expect(
       section.getByText(/sermons will appear here once published/i),
-    ).toBeVisible();
+    ).not.toBeVisible();
+    await expect(section.getByRole("heading", { level: 3 }).first()).toBeVisible();
 
     await section.getByRole("link", { name: /view the full sermon archive/i }).click();
     await expect(page).toHaveURL(/\/sermons\?lang=en$/);
