@@ -27,7 +27,7 @@ service.
 - Sunday service info with platform-aware "Get Directions"
 - Ministries / Missions / History / Contact pages
 - Light/dark theme (light by default)
-- Contact form (client-side validated, **not yet wired to a backend**)
+- Contact form (validated, emails via Resend, honeypot + rate-limited)
 
 ---
 
@@ -46,15 +46,20 @@ service.
 
 ### "Backend"
 There is no separate backend service. Next.js Server Components read
-directly from Sanity at request time (`lib/sanity/queries.ts`). The only
-API route is `app/api/revalidate/route.ts`, a webhook receiver for Sanity's
-on-publish notifications.
+directly from Sanity at request time (`lib/sanity/queries.ts`). Two API
+routes: `app/api/revalidate/route.ts` (Sanity webhook → cache purge) and
+`app/api/contact/route.ts` (contact form → Resend email, no DB storage).
 
 ### CMS / Data
-- **Sanity** (`sanity`, `next-sanity`, `@sanity/vision`) — schema-as-code,
-  no ORM. Studio embedded in this app at `/studio`
+- **Sanity** (`sanity`, `next-sanity`, `@sanity/vision`, `@sanity/image-url`) —
+  schema-as-code, no ORM. Studio embedded in this app at `/studio`
   (`app/studio/[[...tool]]/`, config in `sanity.config.ts`).
-- Document types: `bulletin`, `sermon` — see §6.
+- Document types: `bulletin`, `sermon` — see §6. **Whole-site CMS migration
+  in progress** (Phase 0 landed 2026-09-15) — see §15 "CMS content
+  migration" and §17/§18.
+- Queries use `defineQuery` (from `next-sanity`) + Sanity TypeGen: run
+  `npm run sanity:typegen` after any schema change to regenerate the
+  committed `sanity.types.ts` (extracts `schema.json` first, gitignored).
 - File storage: Sanity's own asset CDN (`cdn.sanity.io`) — uploaded `.docx`
   and `.pdf` files live there, not in this repo or on Vercel.
 
@@ -76,12 +81,15 @@ Visitor
 Next.js (Vercel) — Server Components render pages
   ↓
 lib/sanity/queries.ts  →  Sanity dataset "production" (CDN-cached, ISR 60s
-  ↑                        + tag-based revalidation on publish)
+  ↑                        + tag-based revalidation on publish) — briefly
+  ↑                        made private 2026-09-03, reverted back to
+  ↑                        public same window (see §16)
 Sanity Studio (/studio, admin-only, authenticated)
 ```
 
 External integrations:
 - **Sanity** — CMS + file storage (see §9)
+- **Resend** — contact form email delivery (see §9)
 - **Google Maps** (directions deep links only, no embedded preview) — free
   `maps/dir` URL format, no API key
 - **Microsoft Office Online Viewer** — fallback iframe for `.docx` entries
@@ -124,12 +132,20 @@ components/
 └── nav/footer/hero/mission/testimonials/socials/theme-*  Self-explanatory
 
 lib/
-├── content.ts                 All static copy + nav structure (single source of truth)
-└── sanity/{client,queries}.ts  Sanity client + getBulletins()/getSermons()
+├── content.ts                 All static copy + nav structure — becoming the
+│                               typed *fallback defaults* as content moves into
+│                               Sanity (see §15, "CMS content migration")
+└── sanity/
+    ├── client.ts               getSanityClient() — memoized, null when unconfigured
+    ├── queries.ts              defineQuery GROQ + sanityFetch() (tags + try/catch)
+    └── defaults.ts             withDefaults(fallback, doc) — CMS-over-default merge
 
 sanity/
 ├── env.ts                     Reads NEXT_PUBLIC_SANITY_* (non-throwing — see §16)
-└── schemaTypes/{bulletin,sermon,shared,index}.ts
+├── structure.ts                Custom Studio sidebar + SINGLETON_TYPES lock list
+└── schemaTypes/
+    ├── {bulletin,sermon,shared,index}.ts
+    └── objects/{ctaObject,seoObject,imageWithAlt,socialLink,navItem,richText}.ts
 ```
 
 **Key pattern:** bulletins and sermons share almost all UI/data logic
@@ -196,6 +212,7 @@ Only one custom endpoint:
 
 ```
 POST /api/revalidate    Sanity → Next.js webhook, revalidates on publish
+POST /api/contact       Contact form → Resend email, honeypot + IP rate limit
 ```
 
 Everything else is Server Component data fetching via
@@ -208,8 +225,9 @@ not a REST/GraphQL API consumed by the frontend.
 
 | Service | Purpose | Notes |
 |---|---|---|
-| Sanity | CMS + file/asset storage | Project ID `ejhpsslc`, dataset `production` |
+| Sanity | CMS + file/asset storage | Project ID `ejhpsslc`, dataset `production` — public (briefly made private 2026-09-03, reverted; see §16); CDN file URLs are always public/unsigned regardless of dataset privacy setting |
 | Vercel | Hosting, CI/CD, ISR | Auto-deploys `main` |
+| Resend | Contact form email delivery | `app/api/contact/route.ts`; needs `RESEND_API_KEY` set in Vercel (not in local `.env.local`) or the route 503s |
 | Google Maps | Directions deep links (no embedded preview) | Free `maps/dir` URL, no API key |
 | Microsoft Office Online Viewer | `.docx` fallback viewer | Third-party iframe, used only when no PDF is uploaded yet |
 
@@ -227,6 +245,10 @@ not a REST/GraphQL API consumed by the frontend.
 | `SANITY_REVALIDATE_SECRET` | Verifies the revalidate webhook is really from Sanity |
 | `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata/OG tags |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | `true` → search engines allowed to index; unset/false → `noindex` (current state, matches the legacy site until `esfworld.us` goes live) |
+| `RESEND_API_KEY` | Auth for Resend email API — contact form 503s without it |
+| `CONTACT_TO_EMAIL` | Where contact-form submissions are sent (defaults to `org.email`) |
+| `CONTACT_FROM_EMAIL` | Resend "from" address (defaults to a Resend sandbox address) |
+| `SANITY_API_TOKEN` | Not currently used — dataset is public again; would be needed only if it goes private (see §16) |
 
 `.env.local` is gitignored and never committed.
 
@@ -300,8 +322,20 @@ industry workaround:
 - `SANITY_REVALIDATE_SECRET` gates the revalidate webhook so only Sanity
   (or someone with the secret) can trigger a cache purge.
 - No secrets in the repo; `.env.local` gitignored.
-- Contact form has no backend yet, so there's currently no server-side
-  input-handling surface to worry about there (see §16).
+- `/api/contact` validates server-side (name/email/message length), has an
+  invisible honeypot field, and a per-IP in-memory rate limit (3/hour) —
+  see the `// ponytail:` note in the route for its known limit (resets on
+  cold start, not shared across instances).
+- Security headers set globally (`next.config.ts`, skipping `/studio`):
+  CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy`, `Permissions-Policy`, HSTS.
+- Sanity dataset is public (briefly made private 2026-09-03, then
+  reverted). Even when private, dataset-level privacy does not make
+  bulletin/sermon **files** private — Sanity CDN file URLs are always
+  public/unsigned. If the dataset is made private again, a read token
+  must be added to `lib/sanity/client.ts`'s `createClient()` call first,
+  or content fetches silently return empty (this happened 2026-09-03).
+  See §16.
 
 ---
 
@@ -369,13 +403,44 @@ on Next.js-specific behavior (ISR, ISR tag revalidation, Server
 Components) that Vercel runs natively with zero config; a generic host
 would require hand-building that infrastructure.
 
+**CMS content migration: stay on Sanity, `lib/content.ts` becomes typed
+fallback defaults, not CMS migration.** Requirement (2026-09-15): the whole
+site — not just bulletins/sermons — must be admin-editable from the CMS,
+including images and a hero video. Sanity already covers this (singletons,
+image pipeline, Portable Text, roles); no CMS switch needed. Rather than
+deleting `lib/content.ts`, every getter merges a Sanity document *over* it
+(`lib/sanity/defaults.ts`'s `withDefaults()`), so the site never blanks or
+500s whether Sanity is unconfigured, a singleton doc doesn't exist yet, or
+it exists with some fields still empty — the fallback IS the safety net,
+not a temporary scaffold to delete later. Recommended subscription: apply
+for Sanity's non-profit plan (mirrors the paid Growth tier's Editor role at
+no cost) so the admin isn't a full Administrator with dataset-delete power.
+Full plan: `siteSettings`/`navigation`/`homePage` singletons, one `page`
+type keyed by slug for the six simple pages, `ministry`/`testimonial`/
+`missionCountry` as their own documents, images via `@sanity/image-url`,
+a Sanity-hosted hero background video only (no long-form video hosting —
+out of scope), and draft preview. Phased, each phase independently
+shippable — see §17/§18 for what has landed.
+
 ---
 
 ## 16. Known Limitations
 
-- Contact form (`components/contact.tsx`) validates client-side and shows
-  a success state, but does not POST anywhere — marked with a `// ponytail:`
-  comment at the exact line to swap in a real endpoint.
+- **Sanity dataset privacy vs. `lib/sanity/client.ts` having no read
+  token.** Dataset was briefly made private 2026-09-03, which broke
+  bulletins/sermons (archive pages rendered but returned empty) because
+  `createClient()` has no `token`; reverted to public same day and
+  content came back. Dataset is currently public — this is fine as long
+  as it stays public, but going private again requires wiring a token
+  first. Also note: even a private dataset doesn't hide the actual
+  `.pdf`/`.docx` files — Sanity CDN file URLs are public/unsigned
+  regardless of dataset privacy, so "private dataset" alone doesn't
+  restrict file access. If file-level privacy is ever wanted, it needs
+  signed/short-lived URLs, not just a private dataset + token.
+- Contact form's in-memory rate limit resets on cold start and isn't
+  shared across serverless instances — a soft per-instance guard, not a
+  hard cap (`// ponytail:` note in `app/api/contact/route.ts`). No DB
+  storage of submissions — Resend email only.
 - `esfworld.us` is not yet connected — site is only live at the Vercel
   subdomain.
 - Search-engine indexing is off (`NEXT_PUBLIC_ALLOW_INDEXING` unset) —
@@ -393,20 +458,105 @@ would require hand-building that infrastructure.
 ## 17. Current Development Status
 
 **Completed:** Home, Bulletins/Sermons (Sanity-backed, weekly admin
-workflow live, 33 bulletins migrated), Ministries/Missions/History/Contact
-pages, Sunday Service section with directions, light/dark theme, branded
-favicon, mobile/tablet responsive pass, PDF viewer fix, Playwright suite.
+workflow live, 33 bulletins migrated, paginated 12/page), Ministries/
+Missions/History/Contact pages, Sunday Service section with directions,
+light/dark theme, branded favicon, mobile/tablet responsive pass, PDF
+viewer fix, contact form wired to real email (Resend) with rate limiting,
+per-page SEO metadata + sitemap/robots, extra security headers, nav
+dead-zone fix + visible hover/focus states, Playwright suite.
 
-**In progress / next:** connect `esfworld.us`, wire the contact form to a
-real backend, admin to fill in real Ministries/Missions copy and start
+**Resolved:** Sanity dataset was briefly made private 2026-09-03 (broke
+bulletins/sermons), reverted to public same day — content is back. See §16
+for what's needed if it goes private again.
+
+**In progress / next:** whole-site CMS migration (Phase 0 of 7 landed
+2026-09-15 — infra only, no visible change; see §15). Also: connect
+`esfworld.us`, admin to fill in real Ministries/Missions copy and start
 publishing Sermons.
 
-**Planned (not started):** image gallery (would reuse Sanity's image
-pipeline, no new infra), video embeds (YouTube link pattern, no new infra).
+**Planned (not started):** image gallery, hero background video (both via
+the CMS migration's Phase 4/5), video embeds explicitly deferred/out of
+scope per the approved plan.
 
 ---
 
 ## 18. Recent Changes
+
+### 2026-09-15 — CMS migration Phase 0 (infra, no visible change)
+- Added `@sanity/image-url` as an explicit dependency (was only
+  transitive); added `images.remotePatterns` for `cdn.sanity.io` to
+  `next.config.ts` (`next/image` would otherwise fail on Sanity URLs).
+- Added `media-src 'self' https://cdn.sanity.io` to the CSP — its absence
+  would silently block any future Sanity-hosted video with no console
+  error.
+- Enabled Sanity TypeGen: `sanity-typegen.json` config, `npm run
+  sanity:typegen` script (`sanity schemas extract` → `sanity typegen
+  generate`), committed `sanity.types.ts`. Note: this installed CLI
+  version (`@sanity/cli` 8.5.x) reads typegen config from
+  `sanity-typegen.json` and prints a deprecation notice suggesting
+  `sanity.cli.ts`'s `typegen` key instead — that key isn't in this
+  version's `CliConfig` type yet, so the JSON config is what's actually
+  wired; revisit when the CLI updates.
+- Migrated `lib/sanity/queries.ts`'s two GROQ queries from a
+  `/* groq */`-commented template literal to `defineQuery` (from
+  `next-sanity`), and added a `sanityFetch()` wrapper that keeps the
+  existing null-client guard and `{next:{tags,revalidate:60}}` idiom,
+  takes its tag list explicitly (so a future combined query spanning
+  several `_type`s can list all of them), and adds a `try/catch` — a
+  Sanity outage now returns the fallback instead of throwing a 500. No
+  behavioral change for bulletins/sermons; same tags, same params.
+- Added `lib/sanity/defaults.ts`'s `withDefaults(fallback, doc)` — the
+  merge helper every future CMS getter will use so the site never blanks
+  when a document is missing or partially filled in.
+- Added six reusable object schema types under
+  `sanity/schemaTypes/objects/` (`cta`, `seo`, `imageWithAlt`,
+  `socialLink`, `navItem`/`navChildLink`, `richText`), plus `HREF_RE` /
+  `hrefField()` / `pageCopyFields()` / `contentGroups` factory helpers in
+  `sanity/schemaTypes/shared.ts`. `richText`'s link annotation and every
+  other href field route through the same allowlist
+  (`^(https?://|mailto:|tel:|/|#)`) — the render-side serializer will
+  need to re-check it once rich text ships in Phase 5, since schema
+  validation doesn't run against documents written via the API/Vision.
+- Added `sanity/structure.ts`: a custom Studio sidebar (currently
+  Bulletins/Sermons, same as the stock default) and an exported empty
+  `SINGLETON_TYPES` set that `sanity.config.ts`'s new
+  `document.actions`/`newDocumentOptions` filters read — wired now, will
+  start actually restricting once Phase 1 adds `siteSettings` etc.
+- Verified: `npm run typecheck`, `npm run lint`, and `npm run build` all
+  pass — both with `.env.local`'s real Sanity project configured and with
+  `NEXT_PUBLIC_SANITY_PROJECT_ID` unset (the fallback path). Playwright:
+  24/29 pass; the 5 failures are pre-existing and unrelated — see §16.
+
+### 2026-09-03
+- Sanity dataset briefly switched to private — broke bulletins/sermons
+  fetching since no read token exists in `lib/sanity/client.ts` or env
+  (confirmed via local dev preview: pages loaded, content list empty).
+  Reverted back to public same day; content confirmed working again. No
+  code change made or needed.
+- Confirmed Sanity CDN file URLs are public/unsigned regardless of
+  dataset privacy, and no `media-src` CSP directive is set — drafted a
+  plan for private contact-form storage + signed private media if
+  file-level privacy is wanted later; not implemented, still just an idea.
+
+### 2026-09-02 (evening)
+- Fixed nav bar "dead zone" (breakpoint gap that hid the "Get in touch"
+  button) by aligning all nav breakpoints to `lg`; added visible
+  hover/focus background + ring styling to desktop nav items and the CTA
+  button.
+
+### 2026-09-02
+- Fixed nav/ministries label inconsistency: standardized "Adult" to
+  "Young Adults" across content, metadata, and tests.
+- Wired `lib/seo.ts`'s `pageMetadata()` into all six static pages for
+  per-page canonical/OG tags; added `app/sitemap.ts` and `app/robots.ts`
+  (gated by `NEXT_PUBLIC_ALLOW_INDEXING`); added a default OG image
+  generator via Next's `ImageResponse`.
+- Extended `next.config.ts` `headers()` with `Permissions-Policy` and
+  HSTS.
+- Wired the contact form to real email delivery via Resend
+  (`app/api/contact/route.ts`), with server-side validation, a honeypot
+  field, and a per-IP rate limit.
+- Paginated `/bulletins` and `/sermons` archives, 12 per page.
 
 ### 2026-09-01/02
 - Fixed the iOS PDF page-1 bug with a `react-pdf` canvas viewer; Download

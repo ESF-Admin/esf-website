@@ -10,9 +10,12 @@
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "seed:bulletins": "sanity exec scripts/seed-bulletins.ts --with-user-token"
+    "seed:bulletins": "sanity exec scripts/seed-bulletins.ts --with-user-token",
+    "sanity:schema": "sanity schemas extract --enforce-required-fields --force",
+    "sanity:typegen": "npm run sanity:schema && sanity typegen generate"
   },
   "dependencies": {
+    "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^6.11.0",
     "lucide-react": "^1.33.0",
     "motion": "^13.1.1",

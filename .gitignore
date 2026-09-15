@@ -46,3 +46,7 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# sanity typegen — intermediate schema dump; sanity.types.ts (generated from
+# it) is committed, this raw extract is not
+/schema.json

@@ -1,6 +1,41 @@
 import { defineField } from "sanity";
 import { apiVersion } from "../env";
 
+/**
+ * Allowed href shapes across the whole site: an internal path, an in-page
+ * anchor, or an external http(s)/mailto/tel link. Deliberately excludes
+ * `javascript:` and any other scheme — this is the one thing standing
+ * between "admin edits a link" and stored XSS, so every href field in the
+ * schema (CTAs, nav items, social links, rich-text link marks) routes
+ * through this pattern, and the render layer re-checks it again (schema
+ * validation only runs in Studio, not against documents written via the
+ * API/Vision).
+ */
+export const HREF_RE = /^(https?:\/\/|mailto:|tel:|\/|#)/i;
+
+export function hrefField(name = "href", title = "Link") {
+  return defineField({
+    name,
+    title,
+    type: "string",
+    description:
+      'Where this goes. Use a path like "/contact" for a page on this site, or a full address starting with https:// for another site.',
+    validation: (rule) =>
+      rule.required().custom((value) =>
+        typeof value === "string" && HREF_RE.test(value)
+          ? true
+          : 'Must start with "/", "#", "https://", "mailto:" or "tel:".',
+      ),
+  });
+}
+
+/** Field groups shared by every page-like document, so the Studio sidebar reads the same way everywhere. */
+export const contentGroups = [
+  { name: "content", title: "Content", default: true },
+  { name: "media", title: "Images & video" },
+  { name: "seo", title: "Search & sharing" },
+] as const;
+
 /** Fields common to both weekly document types (bulletin, sermon). */
 export function weeklyDocumentFields(kind: "bulletin" | "sermon") {
   return [
@@ -104,6 +139,46 @@ export function pdfField() {
     validation: (rule) =>
       rule.custom(fileTypeValidator("PDF (.pdf)", ["application/pdf"], ["pdf"])),
   });
+}
+
+/**
+ * Eyebrow + title + intro + SEO — the shape every simple content page
+ * shares (ministries, missions, history, contact, bulletins, sermons).
+ * Callers spread this into their own `fields` array alongside anything
+ * page-specific (e.g. history's milestones).
+ */
+export function pageCopyFields() {
+  return [
+    defineField({
+      name: "eyebrow",
+      title: "Eyebrow",
+      type: "string",
+      description: "Small label above the page title, e.g. \"Get Involved\".",
+      group: "content",
+      validation: (rule) => rule.max(60),
+    }),
+    defineField({
+      name: "title",
+      title: "Page title",
+      type: "string",
+      group: "content",
+      validation: (rule) => rule.required().max(80),
+    }),
+    defineField({
+      name: "intro",
+      title: "Intro text",
+      type: "text",
+      description: "A sentence or two under the title.",
+      group: "content",
+      validation: (rule) => rule.max(320),
+    }),
+    defineField({
+      name: "seo",
+      title: "Search & sharing",
+      type: "seo",
+      group: "seo",
+    }),
+  ];
 }
 
 export const weeklyDocumentOrderings = [

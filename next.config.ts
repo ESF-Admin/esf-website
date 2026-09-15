@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   // only `swr` avoids the build crash without breaking Studio's React tree.
   serverExternalPackages: ["swr"],
 
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "cdn.sanity.io", pathname: "/images/**" },
+    ],
+  },
+
   async headers() {
     return [
       {
@@ -25,6 +31,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "connect-src 'self' https://*.sanity.io",
               "img-src 'self' data: https://cdn.sanity.io",
+              "media-src 'self' https://cdn.sanity.io",
               "frame-src 'self' https://view.officeapps.live.com https://*.sanity.io",
               // React dev mode calls eval() for its debugging tools — never
               // in production, so 'unsafe-eval' is dev-only, not a prod hole.
