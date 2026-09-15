@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { org } from "@/lib/content";
+import { getSiteSettings } from "@/lib/sanity/queries";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     );
   }
 
+  const { org } = await getSiteSettings();
   const resend = new Resend(apiKey);
   const to = process.env.CONTACT_TO_EMAIL || org.email;
   const from = process.env.CONTACT_FROM_EMAIL || "ESF Website <onboarding@resend.dev>";

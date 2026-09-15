@@ -54,8 +54,9 @@ routes: `app/api/revalidate/route.ts` (Sanity webhook → cache purge) and
 - **Sanity** (`sanity`, `next-sanity`, `@sanity/vision`, `@sanity/image-url`) —
   schema-as-code, no ORM. Studio embedded in this app at `/studio`
   (`app/studio/[[...tool]]/`, config in `sanity.config.ts`).
-- Document types: `bulletin`, `sermon` — see §6. **Whole-site CMS migration
-  in progress** (Phase 0 landed 2026-09-15) — see §15 "CMS content
+- Document types: `bulletin`, `sermon`, `siteSettings` (singleton),
+  `navigation` (singleton) — see §6. **Whole-site CMS migration in
+  progress** (Phase 0 + Phase 1 landed 2026-09-15) — see §15 "CMS content
   migration" and §17/§18.
 - Queries use `defineQuery` (from `next-sanity`) + Sanity TypeGen: run
   `npm run sanity:typegen` after any schema change to regenerate the
@@ -116,7 +117,9 @@ app/
 └── layout.tsx                Root layout: fonts, ThemeProvider, metadata
 
 components/
-├── nav.tsx                   Pathname-based active links (no hash anchors)
+├── nav.tsx                    Async server wrapper: fetches CMS nav/settings, renders NavClient
+├── nav-client.tsx              "use client" — all interactive nav behavior; pure props, no data fetching
+├── footer.tsx                 Async server component — reads getSiteSettings()/getNavigation()
 ├── section.tsx                Shared section wrapper (title/subtitle/placeholder badge, h1|h2 toggle)
 ├── document-row.tsx           One bulletin/sermon row (shared by teaser + archive)
 ├── document-teaser.tsx        Homepage "latest 3" for bulletins/sermons
@@ -125,11 +128,11 @@ components/
 ├── pdf-view.tsx                Picks native <iframe> (desktop) vs canvas (mobile) — see §11/§15
 ├── pdf-viewer.tsx             Renders every PDF page to <canvas> via pdf.js — mobile only
 ├── pdf-viewer-lazy.tsx        "use client" boundary — required for next/dynamic ssr:false
-├── sunday-service.tsx         Homepage service-time + directions section (centered, no map embed)
+├── sunday-service.tsx         Async server component — reads getSiteSettings() (org.address/mapUrl, service.*)
 ├── get-directions-button.tsx  Platform-aware Maps deep link (see §11)
 ├── {ministries,missions,history}-teaser.tsx   Compact homepage previews, link out to full page
 ├── {ministries,missions,story,contact}.tsx    Full-page content, used only on their own /route
-└── nav/footer/hero/mission/testimonials/socials/theme-*  Self-explanatory
+└── hero/mission/testimonials/socials/theme-*  Self-explanatory, still content.ts-driven (Phase 2+)
 
 lib/
 ├── content.ts                 All static copy + nav structure — becoming the
@@ -143,9 +146,15 @@ lib/
 sanity/
 ├── env.ts                     Reads NEXT_PUBLIC_SANITY_* (non-throwing — see §16)
 ├── structure.ts                Custom Studio sidebar + SINGLETON_TYPES lock list
+│                               (siteSettings, navigation locked as of Phase 1)
 └── schemaTypes/
-    ├── {bulletin,sermon,shared,index}.ts
+    ├── {bulletin,sermon,siteSettings,navigation,shared,index}.ts
     └── objects/{ctaObject,seoObject,imageWithAlt,socialLink,navItem,richText}.ts
+
+scripts/
+├── seed-bulletins.ts           One-time: migrates 33 hand-sourced bulletins
+└── seed-content.ts             Seeds siteSettings + navigation from lib/content.ts
+                                 (npm run seed:content — idempotent)
 ```
 
 **Key pattern:** bulletins and sermons share almost all UI/data logic
@@ -191,6 +200,39 @@ duplicate data.
 **Locales:** English has real content (33 bulletins migrated from the prior
 site + ongoing weekly uploads). Spanish and French exist in the schema with
 zero entries — UI renders an empty state, not an error.
+
+### `siteSettings` (singleton, `_id: "siteSettings"`)
+Org contact details + Sunday service info + small chrome text. Every field
+has a `lib/content.ts` fallback (via `withDefaults()`) so the site renders
+identically whether or not this document exists yet.
+
+| Field | Type | Notes |
+|---|---|---|
+| `orgName`, `shortName`, `legalFooterName` | string | Full name, short form ("ESF"), footer copyright name |
+| `phone` / `phoneHref` | string | Display text / `tel:` link (href-allowlisted) |
+| `email` / `emailHref` | string | Display text / `mailto:` link (href-allowlisted) |
+| `address` | string | Street address |
+| `mapUrl` | string | Google Maps link (href-allowlisted) |
+| `copyrightYear` | number | Footer copyright year |
+| `serviceDay`, `serviceTime`, `serviceNote` | string | Sunday service section |
+| `footerBlurb` | text | Footer description under the logo |
+| `navCtaLabel` | string | "Get in touch" button label (nav + mobile menu) |
+
+Not yet CMS-driven: `socials` (still `lib/content.ts`'s `socials` array,
+read directly by `components/socials.tsx` — deferred since it's also used
+by `components/contact.tsx`, out of Phase 1's scope; see §17).
+
+### `navigation` (singleton, `_id: "navigation"`)
+One field, `items[]` of the `navItem` object (label, href, and either a
+manual `children[]` list or a `childSource` value). **Phase 1 uses manual
+children only** — `childSource` values like `"missionCountries"` or
+`"ministries"` exist on the schema for a later phase to auto-generate a
+dropdown from real `ministry`/`missionCountry` documents (once those
+exist); until then editors maintain the children list by hand, and the
+query layer doesn't resolve `childSource` at all. If the whole `items`
+array is missing/empty, `getNavigation()` falls back to `lib/content.ts`'s
+`navLinks` wholesale (not a field-by-field merge — see
+`lib/sanity/queries.ts`).
 
 ---
 
@@ -336,6 +378,20 @@ industry workaround:
   must be added to `lib/sanity/client.ts`'s `createClient()` call first,
   or content fetches silently return empty (this happened 2026-09-03).
   See §16.
+- **CMS-controlled hrefs are allowlisted, not trusted.** Every href field
+  a Sanity editor can set — `siteSettings.phoneHref`/`emailHref`/`mapUrl`,
+  `navItem.href`, `cta.href`, the `richText` link mark — goes through
+  `hrefField()`'s validation (`^(https?://|mailto:|tel:|/|#)`), which
+  blocks `javascript:` at the schema level in Studio. That check does
+  **not** run against a document written directly via the API or Vision,
+  so once rich text ships (a later phase) its render-side serializer must
+  re-check the same pattern, not just trust the schema.
+- **JSON-LD escaping** (`app/page.tsx`): `JSON.stringify()` does not escape
+  `</script>`. Now that the JSON-LD payload includes CMS-sourced `org`
+  fields (via `getSiteSettings()`), the output is passed through
+  `.replace(/</g, "\\u003c")` before being placed in
+  `dangerouslySetInnerHTML` — otherwise a value containing that sequence
+  could break out of the script tag. Fixed 2026-09-15, Phase 1.
 
 ---
 
@@ -469,10 +525,13 @@ dead-zone fix + visible hover/focus states, Playwright suite.
 bulletins/sermons), reverted to public same day — content is back. See §16
 for what's needed if it goes private again.
 
-**In progress / next:** whole-site CMS migration (Phase 0 of 7 landed
-2026-09-15 — infra only, no visible change; see §15). Also: connect
-`esfworld.us`, admin to fill in real Ministries/Missions copy and start
-publishing Sermons.
+**In progress / next:** whole-site CMS migration — Phases 0 and 1 of 7
+landed 2026-09-15 (infra, then site chrome: org/contact/service/nav now
+editable from Studio via `siteSettings`/`navigation`, seeded and verified
+against the real project; see §15). Next up is Phase 2 (page copy + SEO
+via a `page` type and `homePage` singleton). Also: connect `esfworld.us`,
+admin to fill in real Ministries/Missions copy and start publishing
+Sermons.
 
 **Planned (not started):** image gallery, hero background video (both via
 the CMS migration's Phase 4/5), video embeds explicitly deferred/out of
@@ -500,6 +559,43 @@ Student**s** Fellowship," but the real legal name used everywhere else in
 the codebase (`lib/content.ts`, `README.md`, page titles, meta
 descriptions) is "Evangelical Student Fellowship" with no "s"; the test
 was wrong, not the content. All 31 Playwright tests now pass.
+
+### 2026-09-15 — CMS migration Phase 1 (site chrome)
+Org contact details, Sunday service time, footer blurb, and the nav CTA
+label are now editable from Studio via the new `siteSettings` singleton;
+the top nav's items via the new `navigation` singleton.
+
+- Split `components/nav.tsx` into an async server wrapper (fetches
+  `getSiteSettings()`/`getNavigation()`) and a new `components/nav-client.tsx`
+  holding all the interactive behavior (scroll state, mobile menu,
+  active-link highlighting) as a pure props-driven `"use client"`
+  component — no behavior change, same `<Nav />` import everywhere.
+- `components/footer.tsx` and `components/sunday-service.tsx` became async
+  server components reading the same two getters.
+- `app/page.tsx`'s JSON-LD now sources `org` from `getSiteSettings()` and
+  gained the `<` escape described in §13.
+- `app/api/contact/route.ts`'s fallback recipient email now also reads
+  `getSiteSettings()` rather than the static `org` import, so it follows a
+  CMS-updated email address.
+- Added `scripts/seed-content.ts` (`npm run seed:content`) — seeds both
+  singletons from `lib/content.ts`'s current values, idempotent via
+  `createIfNotExists`. Ran against the real project; both documents exist.
+- **Scope trim from the original plan:** `socials` stays out of
+  `siteSettings` for this phase — `components/socials.tsx` is shared by
+  both `footer.tsx` (in scope) and `contact.tsx` (Phase 2 scope, still a
+  `"use client"` component reading `lib/content.ts` directly), and
+  threading CMS data through both cleanly is a Phase 2-shaped change. Also
+  trimmed: `navItem`'s `childSource` auto-generation (dropdowns built from
+  future `ministry`/`missionCountry` documents) — the schema field exists,
+  but Phase 1's query doesn't resolve it; all nav children are manual/
+  literal for now, seeded to match today's site exactly. Root layout's
+  `<title>`/description stay static (not `generateMetadata`) — folded into
+  Phase 2's per-page SEO work instead of touching `app/layout.tsx` twice.
+- Verified: typecheck/lint/build clean (real project **and**
+  `NEXT_PUBLIC_SANITY_PROJECT_ID` unset). All 31 Playwright tests pass
+  against both the fallback defaults and, after seeding, the real Sanity
+  documents. Manually verified in-browser against the seeded project: nav,
+  footer, and Sunday Service render the CMS values correctly.
 
 ### 2026-09-15 — CMS migration Phase 0 (infra, no visible change)
 - Added `@sanity/image-url` as an explicit dependency (was only

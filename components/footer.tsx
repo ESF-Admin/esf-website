@@ -1,8 +1,14 @@
 import { Mail, MapPin, Phone } from "lucide-react";
-import { navLinks, org } from "@/lib/content";
+import { getSiteSettings, getNavigation } from "@/lib/sanity/queries";
 import { Socials } from "./socials";
 
-export function Footer() {
+export async function Footer() {
+  const [settings, navLinks] = await Promise.all([
+    getSiteSettings(),
+    getNavigation(),
+  ]);
+  const { org, footerBlurb } = settings;
+
   return (
     <footer className="border-t border-border bg-surface-2">
       <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-16 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
@@ -19,8 +25,7 @@ export function Footer() {
             </span>
           </div>
           <p className="mt-5 max-w-sm leading-relaxed text-muted-foreground text-pretty">
-            An international Christian student ministry on college and university
-            campuses worldwide, and a multi-ethnic ministry in Chicago.
+            {footerBlurb}
           </p>
           <Socials className="mt-6" />
         </div>

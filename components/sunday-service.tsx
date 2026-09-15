@@ -1,9 +1,11 @@
 import { MapPin } from "lucide-react";
-import { org, service } from "@/lib/content";
+import { getSiteSettings } from "@/lib/sanity/queries";
 import { Reveal } from "./reveal";
 import { GetDirectionsButton } from "./get-directions-button";
 
-export function SundayService() {
+export async function SundayService() {
+  const { org, service } = await getSiteSettings();
+
   return (
     <section
       id="sunday-service"

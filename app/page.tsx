@@ -10,28 +10,37 @@ import { HistoryTeaser } from "@/components/history-teaser";
 import { Testimonials } from "@/components/testimonials";
 import { ContactCta } from "@/components/contact-cta";
 import { Footer } from "@/components/footer";
-import { mission, org } from "@/lib/content";
+import { mission } from "@/lib/content";
+import { getSiteSettings } from "@/lib/sanity/queries";
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: org.name,
-  alternateName: org.shortName,
-  foundingDate: "1976",
-  foundingLocation: "Seoul, Korea",
-  description: mission.statement,
-  email: org.email,
-  telephone: org.phone,
-  address: org.address,
-  areaServed: "Chicago, Illinois and college campuses worldwide",
-};
+export default async function Home() {
+  const { org } = await getSiteSettings();
 
-export default function Home() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: org.name,
+    alternateName: org.shortName,
+    foundingDate: "1976",
+    foundingLocation: "Seoul, Korea",
+    description: mission.statement,
+    email: org.email,
+    telephone: org.phone,
+    address: org.address,
+    areaServed: "Chicago, Illinois and college campuses worldwide",
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // JSON.stringify doesn't escape "</script>" — org data now comes
+        // from the CMS, so a value containing that sequence would otherwise
+        // break out of this script tag. < is JSON-safe and renders
+        // identically once parsed.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <Nav />
       <main id="main">

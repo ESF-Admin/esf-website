@@ -105,6 +105,42 @@ export type Cta = {
   href: string;
 };
 
+export type Navigation = {
+  _id: string;
+  _type: "navigation";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  items: Array<
+    {
+      _key: string;
+    } & NavItem
+  >;
+};
+
+export type SiteSettings = {
+  _id: string;
+  _type: "siteSettings";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  orgName: string;
+  shortName: string;
+  legalFooterName: string;
+  phone: string;
+  phoneHref: string;
+  email: string;
+  emailHref: string;
+  address: string;
+  mapUrl: string;
+  copyrightYear: number;
+  serviceDay: string;
+  serviceTime: string;
+  serviceNote?: string;
+  footerBlurb?: string;
+  navCtaLabel?: string;
+};
+
 export type SanityFileAssetReference = {
   _ref: string;
   _type: "reference";
@@ -271,6 +307,8 @@ export type AllSanitySchemaTypes =
   | SanityImageHotspot
   | Seo
   | Cta
+  | Navigation
+  | SiteSettings
   | SanityFileAssetReference
   | Sermon
   | Bulletin
@@ -317,6 +355,151 @@ export type BULLETINS_COUNT_QUERY_RESULT = number;
 // Query: count(*[_type == "sermon" && locale == $locale])
 export type SERMONS_COUNT_QUERY_RESULT = number;
 
+// Source: lib/sanity/queries.ts
+// Variable: SITE_SETTINGS_QUERY
+// Query: *[_id == "siteSettings"][0]
+export type SITE_SETTINGS_QUERY_RESULT =
+  | {
+      _id: "siteSettings";
+      _type: "bulletin";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      date: string;
+      title: string;
+      scripture?: string;
+      locale: "en" | "es" | "fr";
+      file?: {
+        asset?: SanityFileAssetReference;
+        media?: unknown;
+        _type: "file";
+      };
+      pdf?: {
+        asset?: SanityFileAssetReference;
+        media?: unknown;
+        _type: "file";
+      };
+    }
+  | {
+      _id: "siteSettings";
+      _type: "navigation";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      items: Array<
+        {
+          _key: string;
+        } & NavItem
+      >;
+    }
+  | {
+      _id: "siteSettings";
+      _type: "sanity.fileAsset";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      originalFilename?: string;
+      label?: string;
+      title?: string;
+      description?: string;
+      altText?: string;
+      sha1hash: string;
+      extension: string;
+      mimeType: string;
+      size: number;
+      assetId: string;
+      uploadId?: string;
+      path: string;
+      url: string;
+      source?: SanityAssetSourceData;
+    }
+  | {
+      _id: "siteSettings";
+      _type: "sanity.imageAsset";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      originalFilename?: string;
+      label?: string;
+      title?: string;
+      description?: string;
+      altText?: string;
+      sha1hash: string;
+      extension: string;
+      mimeType: string;
+      size: number;
+      assetId: string;
+      uploadId?: string;
+      path: string;
+      url: string;
+      metadata?: SanityImageMetadata;
+      source?: SanityAssetSourceData;
+    }
+  | {
+      _id: "siteSettings";
+      _type: "sermon";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      date: string;
+      title: string;
+      scripture?: string;
+      locale: "en" | "es" | "fr";
+      speaker?: string;
+      file?: {
+        asset?: SanityFileAssetReference;
+        media?: unknown;
+        _type: "file";
+      };
+      pdf?: {
+        asset?: SanityFileAssetReference;
+        media?: unknown;
+        _type: "file";
+      };
+    }
+  | {
+      _id: "siteSettings";
+      _type: "siteSettings";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      orgName: string;
+      shortName: string;
+      legalFooterName: string;
+      phone: string;
+      phoneHref: string;
+      email: string;
+      emailHref: string;
+      address: string;
+      mapUrl: string;
+      copyrightYear: number;
+      serviceDay: string;
+      serviceTime: string;
+      serviceNote?: string;
+      footerBlurb?: string;
+      navCtaLabel?: string;
+    }
+  | null;
+
+// Source: lib/sanity/queries.ts
+// Variable: NAVIGATION_QUERY
+// Query: *[_id == "navigation"][0]{    items[]{ label, href, children[]{ label, href } }  }
+export type NAVIGATION_QUERY_RESULT =
+  | {
+      items: Array<{
+        label: string;
+        href: string;
+        children: Array<{
+          label: string;
+          href: string;
+        }> | null;
+      }>;
+    }
+  | {
+      items: null;
+    }
+  | null;
+
 // Query TypeMap
 import "@sanity/client";
 declare module "@sanity/client" {
@@ -325,5 +508,7 @@ declare module "@sanity/client" {
     '\n  *[_type == "sermon" && locale == $locale] | order(date desc) [$start...$end] {\n    date,\n    title,\n    scripture,\n    speaker,\n    "fileUrl": file.asset->url,\n    "pdfUrl": pdf.asset->url\n  }\n': SERMONS_QUERY_RESULT;
     '\n  count(*[_type == "bulletin" && locale == $locale])\n': BULLETINS_COUNT_QUERY_RESULT;
     '\n  count(*[_type == "sermon" && locale == $locale])\n': SERMONS_COUNT_QUERY_RESULT;
+    '*[_id == "siteSettings"][0]': SITE_SETTINGS_QUERY_RESULT;
+    '\n  *[_id == "navigation"][0]{\n    items[]{ label, href, children[]{ label, href } }\n  }\n': NAVIGATION_QUERY_RESULT;
   }
 }

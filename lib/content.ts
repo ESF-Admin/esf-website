@@ -26,6 +26,13 @@ export const service = {
   note: "Join us in-person.",
 } as const;
 
+// Footer chrome — kept as its own const (rather than inline JSX) so it can
+// serve as the fallback default once siteSettings moves into Sanity.
+export const footerBlurb =
+  "An international Christian student ministry on college and university campuses worldwide, and a multi-ethnic ministry in Chicago.";
+
+export const navCtaLabel = "Get in touch";
+
 export type NavChild = { label: string; href: string };
 export type NavLink = { label: string; href: string; children?: NavChild[] };
 
