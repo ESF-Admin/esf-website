@@ -55,9 +55,10 @@ routes: `app/api/revalidate/route.ts` (Sanity webhook → cache purge) and
   schema-as-code, no ORM. Studio embedded in this app at `/studio`
   (`app/studio/[[...tool]]/`, config in `sanity.config.ts`).
 - Document types: `bulletin`, `sermon`, `siteSettings` (singleton),
-  `navigation` (singleton) — see §6. **Whole-site CMS migration in
-  progress** (Phase 0 + Phase 1 landed 2026-09-15) — see §15 "CMS content
-  migration" and §17/§18.
+  `navigation` (singleton), `homePage` (singleton), `page` (six documents,
+  one per slug: ministries/missions/history/contact/bulletins/sermons) —
+  see §6. **Whole-site CMS migration in progress** (Phase 0 + Phase 1 +
+  Phase 2 landed 2026-09-15) — see §15 "CMS content migration" and §17/§18.
 - Queries use `defineQuery` (from `next-sanity`) + Sanity TypeGen: run
   `npm run sanity:typegen` after any schema change to regenerate the
   committed `sanity.types.ts` (extracts `schema.json` first, gitignored).
@@ -102,24 +103,28 @@ External integrations:
 
 ```text
 app/
-├── page.tsx                 Home (Hero, SundayService, teasers, Mission, Testimonials, ContactCta)
-├── bulletins/page.tsx        /bulletins archive (?lang=en|es|fr)
+├── page.tsx                 Home (Hero, SundayService, teasers, Mission, Testimonials, ContactCta) — reads getHomePage()/getSiteSettings() for JSON-LD
+├── bulletins/page.tsx        /bulletins archive (?lang=en|es|fr) — generateMetadata() + getPage("bulletins")
 ├── bulletins/view/page.tsx   PDF/docx viewer for one bulletin
-├── sermons/page.tsx          /sermons archive (mirrors bulletins)
+├── sermons/page.tsx          /sermons archive (mirrors bulletins) — generateMetadata() + getPage("sermons")
 ├── sermons/view/page.tsx
-├── ministries/page.tsx
-├── missions/page.tsx
-├── history/page.tsx
-├── contact/page.tsx
+├── ministries/page.tsx       generateMetadata() + getPage("ministries")
+├── missions/page.tsx         generateMetadata() + getPage("missions")
+├── history/page.tsx          generateMetadata() + getPage("history")
+├── contact/page.tsx          generateMetadata() + getPage("contact")
 ├── studio/[[...tool]]/       Embedded Sanity Studio
 ├── api/revalidate/route.ts   Sanity webhook → revalidateTag
 ├── icon.svg                  Favicon (Next file-convention, auto-wired)
-└── layout.tsx                Root layout: fonts, ThemeProvider, metadata
+└── layout.tsx                Root layout: fonts, ThemeProvider; generateMetadata() reads siteSettings.defaultSeo
 
 components/
 ├── nav.tsx                    Async server wrapper: fetches CMS nav/settings, renders NavClient
 ├── nav-client.tsx              "use client" — all interactive nav behavior; pure props, no data fetching
 ├── footer.tsx                 Async server component — reads getSiteSettings()/getNavigation()
+├── hero.tsx                    Async server wrapper: fetches getHomePage().hero, renders HeroClient
+├── hero-client.tsx              "use client" — hero motion/layout; pure props, no data fetching
+├── mission.tsx                 Async server component — reads getHomePage().mission
+├── contact-cta.tsx             Async server component — reads getHomePage().contactCta
 ├── section.tsx                Shared section wrapper (title/subtitle/placeholder badge, h1|h2 toggle)
 ├── document-row.tsx           One bulletin/sermon row (shared by teaser + archive)
 ├── document-teaser.tsx        Homepage "latest 3" for bulletins/sermons
@@ -130,30 +135,34 @@ components/
 ├── pdf-viewer-lazy.tsx        "use client" boundary — required for next/dynamic ssr:false
 ├── sunday-service.tsx         Async server component — reads getSiteSettings() (org.address/mapUrl, service.*)
 ├── get-directions-button.tsx  Platform-aware Maps deep link (see §11)
-├── {ministries,missions,history}-teaser.tsx   Compact homepage previews, link out to full page
-├── {ministries,missions,story,contact}.tsx    Full-page content, used only on their own /route
-└── hero/mission/testimonials/socials/theme-*  Self-explanatory, still content.ts-driven (Phase 2+)
+├── ministries.tsx, missions.tsx, story.tsx  Full-page bodies — props-driven, no data fetching of their own
+├── contact.tsx                 ContactSection — title/subtitle are props (Phase 2); org/socials still content.ts-direct (Phase 1 trim, unchanged)
+├── {ministries,missions,history}-teaser.tsx   Async server components — read getPage() so teasers can't drift from their full page
+└── testimonials/socials/theme-*  Self-explanatory, still content.ts-driven (Phase 3+)
 
 lib/
-├── content.ts                 All static copy + nav structure — becoming the
-│                               typed *fallback defaults* as content moves into
-│                               Sanity (see §15, "CMS content migration")
+├── content.ts                 All static copy + nav structure — the typed
+│                               *fallback defaults* content merges over (see
+│                               §15, "CMS content migration"); also
+│                               `pageSeoDefaults` (per-page <title>/description fallback)
 └── sanity/
     ├── client.ts               getSanityClient() — memoized, null when unconfigured
-    ├── queries.ts              defineQuery GROQ + sanityFetch() (tags + try/catch)
+    ├── queries.ts              defineQuery GROQ + sanityFetch(); getSiteSettings(),
+    │                           getNavigation(), getHomePage(), getPage(slug, fallback)
     └── defaults.ts             withDefaults(fallback, doc) — CMS-over-default merge
 
 sanity/
 ├── env.ts                     Reads NEXT_PUBLIC_SANITY_* (non-throwing — see §16)
 ├── structure.ts                Custom Studio sidebar + SINGLETON_TYPES lock list
-│                               (siteSettings, navigation locked as of Phase 1)
+│                               (siteSettings, navigation, homePage, page — all locked as of Phase 2)
 └── schemaTypes/
-    ├── {bulletin,sermon,siteSettings,navigation,shared,index}.ts
+    ├── {bulletin,sermon,siteSettings,navigation,homePage,page,shared,index}.ts
     └── objects/{ctaObject,seoObject,imageWithAlt,socialLink,navItem,richText}.ts
 
 scripts/
 ├── seed-bulletins.ts           One-time: migrates 33 hand-sourced bulletins
-└── seed-content.ts             Seeds siteSettings + navigation from lib/content.ts
+└── seed-content.ts             Seeds siteSettings, navigation, homePage, and
+                                 the six page docs from lib/content.ts
                                  (npm run seed:content — idempotent)
 ```
 
@@ -233,6 +242,39 @@ query layer doesn't resolve `childSource` at all. If the whole `items`
 array is missing/empty, `getNavigation()` falls back to `lib/content.ts`'s
 `navLinks` wholesale (not a field-by-field merge — see
 `lib/sanity/queries.ts`).
+
+### `homePage` (singleton, `_id: "homePage"`)
+The homepage's hero, mission statement, and closing contact CTA. Every
+field falls back to `lib/content.ts`'s `hero`/`mission` consts (and a
+literal default for `contactCta`) via `withDefaults()`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `hero.eyebrow`, `.title`, `.body` | string/text | Headline's last word is highlighted client-side |
+| `hero.primaryCta`, `.secondaryCta` | `cta` object | Label + href (href-allowlisted) |
+| `mission.title`, `.statement` | string/text | The homepage's mission-statement band |
+| `contactCta.title`, `.subtitle`, `.cta` | string/text/`cta` | Closing homepage CTA (was hardcoded in `contact-cta.tsx` before Phase 2) |
+
+### `page` (six documents, `_id: "page.<slug>"`)
+One type for every simple content page — `ministries`, `missions`,
+`history`, `contact`, `bulletins`, `sermons` — rather than six near-
+identical singletons. Shared fields (`eyebrow`, `title`, `intro`, `seo`)
+come from `pageCopyFields()` in `sanity/schemaTypes/shared.ts`; each
+page's extra fields are hidden in Studio unless editing that page (see
+`onlyFor()` in `sanity/schemaTypes/page.ts`):
+
+| Slug | Extra fields |
+|---|---|
+| `ministries` | `items[]` (name, body) — same 4 sample entries as today, `placeholder` badge still hardcoded `true` in `components/ministries.tsx` pending Phase 3 |
+| `missions` | `countries[]` (strings) — placeholder badge likewise still hardcoded |
+| `history` | `paragraphs[]` (text), `milestones[]` (year, title, body) |
+| `contact` | none — org/socials come from `siteSettings`, not this doc |
+| `bulletins`, `sermons` | `tabsLabel`, `emptyText` (archive-page-only strings, distinct from the homepage teaser's `lib/content.ts` `bulletins`/`sermons` consts, which stay separate — see §16) |
+
+`slug` is `readOnly` in Studio and drives which page a document is; every
+document is fetched with `getPage(slug, fallback)`, a field-by-field merge
+over a caller-supplied fallback shaped like that page's current
+`lib/content.ts` values.
 
 ---
 
@@ -508,6 +550,19 @@ shippable — see §17/§18 for what has landed.
 - Below-the-fold content depends on JS (`Reveal`'s `whileInView`
   animation) — with JavaScript disabled, those sections stay at
   `opacity: 0`.
+- **Bulletins/sermons homepage-teaser title vs. archive-page title stay
+  separate CMS values.** `lib/content.ts`'s `bulletins`/`sermons` consts
+  (used only by `components/bulletins.tsx`/`sermons.tsx`, the homepage
+  teasers) are pre-existing, independent of `page.bulletins`/`page.sermons`
+  (the archive page's own eyebrow/title/intro/tabsLabel/emptyText). This
+  duplication predates the CMS migration — Phase 2 moved the archive
+  page's copy into the CMS without unifying it with the teaser's, since
+  they were already independently maintained. An admin editing the
+  bulletins archive page's title in Studio won't change the homepage
+  teaser's heading.
+- `ministries`/`missions` "Placeholder content" badges are still a
+  hardcoded `true` in their components, not a CMS field yet — Phase 3
+  adds a real toggle so an admin can turn the badge off themselves.
 
 ---
 
@@ -525,13 +580,14 @@ dead-zone fix + visible hover/focus states, Playwright suite.
 bulletins/sermons), reverted to public same day — content is back. See §16
 for what's needed if it goes private again.
 
-**In progress / next:** whole-site CMS migration — Phases 0 and 1 of 7
-landed 2026-09-15 (infra, then site chrome: org/contact/service/nav now
-editable from Studio via `siteSettings`/`navigation`, seeded and verified
-against the real project; see §15). Next up is Phase 2 (page copy + SEO
-via a `page` type and `homePage` singleton). Also: connect `esfworld.us`,
-admin to fill in real Ministries/Missions copy and start publishing
-Sermons.
+**In progress / next:** whole-site CMS migration — Phases 0, 1 and 2 of 7
+landed 2026-09-15 (infra; site chrome via `siteSettings`/`navigation`;
+page copy + SEO via `page`/`homePage` + `generateMetadata()` on every
+route). All seeded and verified against the real project. Next up is
+Phase 3 (ministries/testimonials/mission-countries become their own
+documents; placeholder badges become a real toggle). Also: connect
+`esfworld.us`, admin to fill in real Ministries/Missions copy and start
+publishing Sermons.
 
 **Planned (not started):** image gallery, hero background video (both via
 the CMS migration's Phase 4/5), video embeds explicitly deferred/out of
@@ -559,6 +615,55 @@ Student**s** Fellowship," but the real legal name used everywhere else in
 the codebase (`lib/content.ts`, `README.md`, page titles, meta
 descriptions) is "Evangelical Student Fellowship" with no "s"; the test
 was wrong, not the content. All 31 Playwright tests now pass.
+
+### 2026-09-15 — CMS migration Phase 2 (page copy + SEO)
+Every page's own copy and search/sharing metadata is now editable from
+Studio, via a new `page` document type (one per slug, covering
+ministries/missions/history/contact/bulletins/sermons) and a new
+`homePage` singleton (hero, mission statement, closing contact CTA).
+
+- Each of the six inner routes gained a `generateMetadata()` reading
+  `getPage(slug, fallback)` and passing its `seo` sub-object through the
+  existing `pageMetadata()` helper (unchanged) — replacing a static
+  `export const metadata`. `lib/content.ts` grew `pageSeoDefaults`, the
+  literal title/description strings each page already had.
+- Root layout (`app/layout.tsx`) converted the same way: `generateMetadata()`
+  now reads `siteSettings.defaultSeo` (a new field, backfilled onto the
+  existing Phase 1 `siteSettings` document via a `setIfMissing` patch in
+  the seed script so it doesn't require deleting/recreating that doc).
+- Split `components/hero.tsx` the same way `nav.tsx` was split in Phase 1:
+  an async server wrapper (`getHomePage()`) plus a new `hero-client.tsx`
+  holding all the motion/interactive code as pure props.
+  `components/mission.tsx` and `contact-cta.tsx` became async server
+  components reading `getHomePage()` directly — `contact-cta.tsx`'s
+  previously-hardcoded heading/subtitle/button text now come from the CMS.
+- `components/ministries.tsx`, `missions.tsx`, and `story.tsx` (the full
+  page bodies) stopped importing `lib/content.ts` directly and became
+  props-driven — their data now comes from each page's own `getPage()`
+  call, not a module-level import.
+- **Extended beyond the plan's explicit file list, to avoid a bug the
+  phase would otherwise introduce:** `components/ministries-teaser.tsx`,
+  `missions-teaser.tsx`, and `history-teaser.tsx` (the homepage's compact
+  previews) also switched to `getPage()`. They weren't named in Phase 2's
+  plan, but since the full pages they preview just became CMS-driven,
+  leaving the teasers on the old `lib/content.ts` import would have made
+  them silently go stale the moment an admin edited a page in Studio —
+  the teaser and the full page would show different content for the same
+  section. Fixing that was part of finishing this phase correctly, not
+  scope creep.
+- `app/page.tsx`'s JSON-LD now also sources `mission.statement` from
+  `getHomePage()` instead of the static import (org already was, since
+  Phase 1).
+- Added the new documents to `scripts/seed-content.ts`
+  (`homePage`, `page.ministries`, `page.missions`, `page.history`,
+  `page.contact`, `page.bulletins`, `page.sermons`) and ran it against the
+  real project.
+- Verified: typecheck/lint/build clean with the real project and with
+  `NEXT_PUBLIC_SANITY_PROJECT_ID` unset. All 31 Playwright tests pass
+  against both the fallback defaults and, after seeding, the real Sanity
+  documents. Manually verified in-browser: `/history` renders its CMS
+  copy, and the homepage's `<title>`/meta description follow
+  `siteSettings.defaultSeo`.
 
 ### 2026-09-15 — CMS migration Phase 1 (site chrome)
 Org contact details, Sunday service time, footer blurb, and the nav CTA

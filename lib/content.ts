@@ -252,3 +252,34 @@ export const socials: { name: SocialName; href: string; label: string }[] = [
   { name: "Instagram", href: "https://www.instagram.com/", label: "ESF on Instagram" },
   { name: "LinkedIn", href: "https://www.linkedin.com/", label: "ESF on LinkedIn" },
 ];
+
+// Per-page <title>/description fallback, used by each page's generateMetadata()
+// until (or unless) an editor sets a page's own "Search & sharing" fields in
+// Studio. Keys match the `page` document type's `slug` field.
+export const pageSeoDefaults = {
+  ministries: {
+    title: "Ministries",
+    description:
+      "Ways to get plugged in at ESF — Young Adults, Evangelism, Bible Studies, and Youth & Children.",
+  },
+  missions: {
+    title: "Missions",
+    description: "Countries where ESF and its partners serve.",
+  },
+  history: {
+    title: "History",
+    description: "How ESF began in Seoul, Korea in 1976, and how it came to Chicago.",
+  },
+  contact: {
+    title: "Contact",
+    description: "Reach ESF by phone, email, or the contact form.",
+  },
+  bulletins: {
+    title: "Bulletins",
+    description: "The full archive of ESF Sunday service bulletins, most recent first.",
+  },
+  sermons: {
+    title: "Sermons",
+    description: "The full archive of ESF Sunday sermon messages, most recent first.",
+  },
+} as const;

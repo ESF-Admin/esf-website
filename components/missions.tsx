@@ -1,22 +1,27 @@
 import { Globe2 } from "lucide-react";
-import { missions } from "@/lib/content";
 import { Section } from "./section";
 import { RevealGroup, RevealItem } from "./reveal";
 
-export function Missions() {
+type Props = {
+  title: string;
+  subtitle: string;
+  countries: readonly string[];
+};
+
+export function Missions({ title, subtitle, countries }: Props) {
   return (
     <Section
       id="missions"
-      title={missions.title}
-      subtitle={missions.subtitle}
-      placeholder={missions.placeholder}
+      title={title}
+      subtitle={subtitle}
+      placeholder
       headingLevel="h1"
     >
       <RevealGroup
         as="ul"
         className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
       >
-        {missions.countries.map((country) => (
+        {countries.map((country) => (
           <RevealItem
             as="li"
             key={country}

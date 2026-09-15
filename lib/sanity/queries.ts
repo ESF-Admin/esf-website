@@ -7,6 +7,8 @@ import {
   footerBlurb,
   navCtaLabel,
   navLinks,
+  hero,
+  mission,
   type BulletinEntry,
   type SermonEntry,
   type DocLocale,
@@ -126,6 +128,7 @@ type SiteSettingsDoc = {
   serviceNote?: string;
   footerBlurb?: string;
   navCtaLabel?: string;
+  defaultSeo?: { title?: string; description?: string };
 };
 
 const SITE_SETTINGS_QUERY = defineQuery(`*[_id == "siteSettings"][0]`);
@@ -135,6 +138,13 @@ export type SiteSettings = {
   service: typeof service;
   footerBlurb: string;
   navCtaLabel: string;
+  defaultSeo: { title: string; description: string };
+};
+
+const DEFAULT_SEO = {
+  title: `${org.name} (ESF) — Campus Ministry`,
+  description:
+    "Evangelical Student Fellowship is an international Christian student ministry on college and university campuses worldwide, and a multi-ethnic ministry in Chicago. Founded in Seoul, Korea in 1976.",
 };
 
 /**
@@ -153,7 +163,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   );
 
   return withDefaults(
-    { org, service, footerBlurb, navCtaLabel },
+    { org, service, footerBlurb, navCtaLabel, defaultSeo: DEFAULT_SEO },
     doc && {
       org: {
         name: doc.orgName,
@@ -174,6 +184,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       },
       footerBlurb: doc.footerBlurb,
       navCtaLabel: doc.navCtaLabel,
+      defaultSeo: doc.defaultSeo,
     },
   );
 }
@@ -202,4 +213,68 @@ export async function getNavigation(): Promise<NavLink[]> {
     null,
   );
   return doc?.items?.length ? doc.items : [...navLinks];
+}
+
+type CtaDoc = { label?: string; href?: string };
+
+type HomePageDoc = {
+  hero?: {
+    eyebrow?: string;
+    title?: string;
+    body?: string;
+    primaryCta?: CtaDoc;
+    secondaryCta?: CtaDoc;
+  };
+  mission?: { title?: string; statement?: string };
+  contactCta?: { title?: string; subtitle?: string; cta?: CtaDoc };
+};
+
+const HOME_PAGE_QUERY = defineQuery(`*[_id == "homePage"][0]`);
+
+const DEFAULT_CONTACT_CTA = {
+  title: "Have a question? We'd love to hear from you.",
+  subtitle: "Reach out about a gathering, a ministry, or just to say hello.",
+  cta: { label: "Get in touch", href: "/contact" },
+};
+
+export type HomePage = {
+  hero: typeof hero;
+  mission: typeof mission;
+  contactCta: typeof DEFAULT_CONTACT_CTA;
+};
+
+/**
+ * Homepage hero, mission statement, and closing contact CTA — the
+ * homePage singleton, merged over lib/content.ts's defaults.
+ */
+export async function getHomePage(): Promise<HomePage> {
+  const doc = await sanityFetch<HomePageDoc | null>(
+    HOME_PAGE_QUERY,
+    {},
+    ["homePage"],
+    null,
+  );
+  return withDefaults({ hero, mission, contactCta: DEFAULT_CONTACT_CTA }, doc);
+}
+
+const PAGE_QUERY = defineQuery(`*[_type == "page" && slug == $slug][0]`);
+
+/**
+ * One of the six simple content pages (ministries, missions, history,
+ * contact, bulletins, sermons) — the matching `page` document, merged
+ * over a caller-supplied fallback shaped like that page's current
+ * lib/content.ts values. Generic because each page's extra fields differ
+ * (ministries' `items`, history's `milestones`, etc.) — see sanity/schemaTypes/page.ts.
+ */
+export async function getPage<T extends object>(
+  slug: string,
+  fallback: T,
+): Promise<T> {
+  const doc = await sanityFetch<Record<string, unknown> | null>(
+    PAGE_QUERY,
+    { slug },
+    ["page"],
+    null,
+  );
+  return withDefaults(fallback, doc);
 }

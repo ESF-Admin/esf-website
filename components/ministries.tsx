@@ -1,22 +1,27 @@
 import { Church, HandHeart, BookOpenText, Baby } from "lucide-react";
-import { ministries } from "@/lib/content";
 import { Section } from "./section";
 import { RevealGroup, RevealItem } from "./reveal";
 
 const icons = [Church, HandHeart, BookOpenText, Baby];
 
-export function Ministries() {
+type Props = {
+  title: string;
+  subtitle: string;
+  items: { name: string; body: string }[];
+};
+
+export function Ministries({ title, subtitle, items }: Props) {
   return (
     <Section
       id="ministries"
-      title={ministries.title}
-      subtitle={ministries.subtitle}
-      placeholder={ministries.placeholder}
+      title={title}
+      subtitle={subtitle}
+      placeholder
       headingLevel="h1"
       tinted
     >
       <RevealGroup as="div" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {ministries.items.map((m, i) => {
+        {items.map((m, i) => {
           const Icon = icons[i];
           return (
             <RevealItem

@@ -1,8 +1,10 @@
 import { Quote } from "lucide-react";
-import { mission } from "@/lib/content";
+import { getHomePage } from "@/lib/sanity/queries";
 import { Reveal } from "./reveal";
 
-export function Mission() {
+export async function Mission() {
+  const { mission } = await getHomePage();
+
   return (
     <section
       id="mission"

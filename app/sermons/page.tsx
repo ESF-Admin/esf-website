@@ -1,15 +1,26 @@
 import type { Metadata } from "next";
 import { DocumentArchive } from "@/components/document-archive";
-import { docLocales, type DocLocale } from "@/lib/content";
-import { getSermons } from "@/lib/sanity/queries";
+import { docLocales, pageSeoDefaults, type DocLocale } from "@/lib/content";
+import { getSermons, getPage } from "@/lib/sanity/queries";
 import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = pageMetadata({
+const FALLBACK = {
+  eyebrow: "Sermon archive",
   title: "Sermons",
-  description:
-    "The full archive of ESF Sunday sermon messages, most recent first.",
-  path: "/sermons",
-});
+  intro: "Every Sunday sermon message, most recent first.",
+  tabsLabel: "Sermon language",
+  emptyText: "No sermons have been published in this language yet.",
+  seo: pageSeoDefaults.sermons,
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const data = await getPage("sermons", FALLBACK);
+  return pageMetadata({
+    title: data.seo.title,
+    description: data.seo.description,
+    path: "/sermons",
+  });
+}
 
 function isLocale(value: string | undefined): value is DocLocale {
   return docLocales.some((l) => l.code === value);
@@ -23,20 +34,23 @@ export default async function SermonsPage({
   const { lang, page: pageParam } = await searchParams;
   const active: DocLocale = isLocale(lang) ? lang : "en";
   const page = Math.max(1, Number(pageParam) || 1);
-  const { entries, total } = await getSermons(active, page);
+  const [data, { entries, total }] = await Promise.all([
+    getPage("sermons", FALLBACK),
+    getSermons(active, page),
+  ]);
 
   return (
     <DocumentArchive
-      eyebrow="Sermon archive"
-      title="Sermons"
-      intro="Every Sunday sermon message, most recent first."
+      eyebrow={data.eyebrow}
+      title={data.title}
+      intro={data.intro}
       basePath="/sermons"
-      tabsLabel="Sermon language"
+      tabsLabel={data.tabsLabel}
       active={active}
       entries={entries}
       total={total}
       page={page}
-      emptyText="No sermons have been published in this language yet."
+      emptyText={data.emptyText}
     />
   );
 }

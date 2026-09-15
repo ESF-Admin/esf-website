@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit, Work_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import { org } from "@/lib/content";
+import { getSiteSettings } from "@/lib/sanity/queries";
 import "./globals.css";
 
 const heading = Outfit({
@@ -22,43 +22,45 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://esfworld.us";
 // NEXT_PUBLIC_ALLOW_INDEXING=true is set for the production deploy.
 const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";
 
-const description =
-  "Evangelical Student Fellowship is an international Christian student ministry on college and university campuses worldwide, and a multi-ethnic ministry in Chicago. Founded in Seoul, Korea in 1976.";
+export async function generateMetadata(): Promise<Metadata> {
+  const { org, defaultSeo } = await getSiteSettings();
+  const { title, description } = defaultSeo;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: `${org.name} (ESF) — Campus Ministry`,
-    template: `%s | ${org.shortName}`,
-  },
-  description,
-  applicationName: org.name,
-  keywords: [
-    "campus ministry",
-    "Christian student fellowship",
-    "ESF",
-    "Chicago",
-    "Bible study",
-    "college ministry",
-  ],
-  alternates: { canonical: "/" },
-  robots: allowIndexing
-    ? { index: true, follow: true }
-    : { index: false, follow: false },
-  openGraph: {
-    type: "website",
-    url: siteUrl,
-    siteName: org.name,
-    title: `${org.name} (ESF) — Campus Ministry`,
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: title,
+      template: `%s | ${org.shortName}`,
+    },
     description,
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${org.name} (ESF) — Campus Ministry`,
-    description,
-  },
-};
+    applicationName: org.name,
+    keywords: [
+      "campus ministry",
+      "Christian student fellowship",
+      "ESF",
+      "Chicago",
+      "Bible study",
+      "college ministry",
+    ],
+    alternates: { canonical: "/" },
+    robots: allowIndexing
+      ? { index: true, follow: true }
+      : { index: false, follow: false },
+    openGraph: {
+      type: "website",
+      url: siteUrl,
+      siteName: org.name,
+      title,
+      description,
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [

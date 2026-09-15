@@ -2,20 +2,34 @@ import type { Metadata } from "next";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Ministries } from "@/components/ministries";
+import { ministries, pageSeoDefaults } from "@/lib/content";
+import { getPage } from "@/lib/sanity/queries";
 import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Ministries",
-  description: "Ways to get plugged in at ESF — Young Adults, Evangelism, Bible Studies, and Youth & Children.",
-  path: "/ministries",
-});
+const FALLBACK = {
+  title: ministries.title,
+  intro: ministries.subtitle,
+  items: [...ministries.items],
+  seo: pageSeoDefaults.ministries,
+};
 
-export default function MinistriesPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  const data = await getPage("ministries", FALLBACK);
+  return pageMetadata({
+    title: data.seo.title,
+    description: data.seo.description,
+    path: "/ministries",
+  });
+}
+
+export default async function MinistriesPage() {
+  const data = await getPage("ministries", FALLBACK);
+
   return (
     <>
       <Nav />
       <main id="main" className="pt-20">
-        <Ministries />
+        <Ministries title={data.title} subtitle={data.intro} items={data.items} />
       </main>
       <Footer />
     </>

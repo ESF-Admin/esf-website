@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { CheckCircle2, Mail, MapPin, Phone } from "lucide-react";
-import { contact, org } from "@/lib/content";
+import { org } from "@/lib/content";
 import { Section } from "./section";
 import { Socials } from "./socials";
 
@@ -38,7 +38,9 @@ const empty: Record<Field, string> = {
   message: "",
 };
 
-export function ContactSection() {
+type Props = { title: string; subtitle: string };
+
+export function ContactSection({ title, subtitle }: Props) {
   const [values, setValues] = useState(empty);
   const [errors, setErrors] = useState<Errors>({});
   const [sent, setSent] = useState(false);
@@ -92,7 +94,7 @@ export function ContactSection() {
   };
 
   return (
-    <Section id="contact" title={contact.title} subtitle={contact.subtitle} headingLevel="h1">
+    <Section id="contact" title={title} subtitle={subtitle} headingLevel="h1">
       <div className="grid gap-12 lg:grid-cols-[1fr_minmax(0,22rem)]">
         <form
           ref={formRef}

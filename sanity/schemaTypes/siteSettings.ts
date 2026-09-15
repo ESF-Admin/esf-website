@@ -96,6 +96,13 @@ export const siteSettings = defineType({
       description: "The button in the top navigation and mobile menu.",
       validation: (rule) => rule.max(30),
     }),
+    defineField({
+      name: "defaultSeo",
+      title: "Default search & sharing",
+      type: "seo",
+      description:
+        "Fallback title/description for the site as a whole (used by the homepage and anywhere else without its own).",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "Site settings" }),

@@ -10,11 +10,13 @@ import { HistoryTeaser } from "@/components/history-teaser";
 import { Testimonials } from "@/components/testimonials";
 import { ContactCta } from "@/components/contact-cta";
 import { Footer } from "@/components/footer";
-import { mission } from "@/lib/content";
-import { getSiteSettings } from "@/lib/sanity/queries";
+import { getSiteSettings, getHomePage } from "@/lib/sanity/queries";
 
 export default async function Home() {
-  const { org } = await getSiteSettings();
+  const [{ org }, { mission }] = await Promise.all([
+    getSiteSettings(),
+    getHomePage(),
+  ]);
 
   const jsonLd = {
     "@context": "https://schema.org",
