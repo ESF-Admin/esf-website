@@ -496,22 +496,28 @@ industry workaround:
   must be added to `lib/sanity/client.ts`'s `createClient()` call first,
   or content fetches silently return empty (this happened 2026-09-03).
   See §16.
-- **CMS-controlled hrefs are allowlisted, not trusted.** Every href field
-  a Sanity editor can set — `siteSettings.phoneHref`/`emailHref`/`mapUrl`,
-  `navItem.href`, `cta.href`, the `richText` link mark — goes through
-  `hrefField()`'s validation (`^(https?://|mailto:|tel:|/|#)`), which
-  blocks `javascript:` at the schema level in Studio. That check does
-  **not** run against a document written directly via the API or Vision,
-  so `components/rich-text.tsx`'s render-side link mark re-checks the
-  same pattern (Phase 5) and cannot be overridden by a caller's
-  `components` prop. **Verified live, not just by code review:** a link
-  with `href: "javascript:alert(document.cookie)"` was patched directly
-  onto the production `homePage.mission.statement` via the API (bypassing
-  Studio entirely), then the site was built and the rendered HTML
-  inspected — the text rendered as a plain, non-clickable string, no
-  `<a>` tag was emitted. The test document was reverted immediately after
-  (see `git log` for that day if this is ever repeated — no test/revert
-  scripts were kept in the repo).
+- **CMS-controlled hrefs are allowlisted, not trusted — at render time,
+  everywhere, not just in Studio.** Every href field a Sanity editor can
+  set — `siteSettings.phoneHref`/`emailHref`/`mapUrl`, `navItem.href`,
+  `cta.href` (hero CTAs, contact CTA), the `richText` link mark — goes
+  through `hrefField()`'s validation (`^(https?://|mailto:|tel:|/|#)`) in
+  Studio, which blocks `javascript:`. That check does **not** run against
+  a document written directly via the API or Vision, so it must be
+  re-checked at render time too. `components/rich-text.tsx`'s link mark
+  did this from Phase 5 on; a 2026-09-16 pre-push security review found
+  every *other* CMS href sink lacked the same re-check — `lib/href.ts`
+  (`isSafeHref`/`safeHref`) now covers all of them: `hero-client.tsx`,
+  `contact-cta.tsx`, `nav-client.tsx` (desktop + mobile menu),
+  `footer.tsx`, `contact.tsx`, `sunday-service.tsx`. **Verified live, not
+  just by code review, both times:** a link with
+  `href: "javascript:alert(document.cookie)"` was patched directly onto a
+  production document via the API (bypassing Studio) — first onto
+  `homePage.mission.statement` (Phase 5, caught by the rich-text
+  serializer), then onto `homePage.hero.primaryCta` (2026-09-16, caught by
+  the new `safeHref()` sweep, which correctly falls back to `href="#"`
+  while still showing the button's label) — rebuilt each time and
+  inspected the rendered HTML directly. Both test documents were reverted
+  immediately after; no test/revert scripts were kept in the repo.
 - **Nothing that originates in Sanity may reach `dangerouslySetInnerHTML`.**
   The only use in the codebase (`app/page.tsx`'s JSON-LD `<script>`) passes
   through `JSON.stringify()` + a `<` escape (see below) — never raw
@@ -732,6 +738,42 @@ Student**s** Fellowship," but the real legal name used everywhere else in
 the codebase (`lib/content.ts`, `README.md`, page titles, meta
 descriptions) is "Evangelical Student Fellowship" with no "s"; the test
 was wrong, not the content. All 31 Playwright tests now pass.
+
+### 2026-09-16 — Pre-push security review, mobile verification, and push
+With all 7 CMS migration phases committed locally, ran a full security
+review of the branch (git diff against `origin/main`) plus a mobile/
+tablet compatibility pass before pushing.
+
+- **Found and fixed a real gap:** `components/rich-text.tsx` was the only
+  place a CMS-controlled href got re-validated at render time; every
+  other href sink (hero/contact CTAs, nav items, org contact links) took
+  a Sanity href field on trust. Added `lib/href.ts` and applied it at
+  every sink — see §13 for the live verification (a `javascript:` href
+  was injected via the API into a production hero CTA, confirmed
+  rendered as `href="#"`, then reverted).
+- A second candidate finding — the href allowlist accepting
+  protocol-relative URLs (`//host`) as if they were internal paths — was
+  investigated and deliberately **not** fixed: it's open-redirect-class
+  (misleading same-tab navigation, no code execution), requires the same
+  Sanity-write-access threat model as everything else here, and isn't
+  worth the complexity of tightening the regex further right now.
+- Mobile (375px) and tablet (768px) verified in-browser: homepage
+  (hero text/CTAs readable over the video, Sunday Service, teasers),
+  mobile nav menu (open/close, dropdown disclosure, all links), the
+  contact form, and the mobile PDF.js canvas viewer (confirmed via
+  `canvas` element dimensions — the Browser pane's screenshot tool can't
+  capture actively-repainting canvas content, same class of limitation
+  documented for `<video>` in Phase 4) — no horizontal overflow, no
+  console errors, no broken layouts at either width.
+- Verified CSP/HSTS/X-Frame-Options/Referrer-Policy/Permissions-Policy
+  headers are actually served (`curl -I`), and that `'unsafe-eval'` is
+  present in `script-src` in dev but correctly absent from a production
+  build. Confirmed no secret or write token is reachable from
+  client-shipped code (`grep` for `process.env` usage outside
+  `NEXT_PUBLIC_*` found only server-only route handlers).
+- All 7 phase commits plus this fix pushed to `origin/main`
+  (`1e0c8ee..7195401`) after typecheck/lint/build/Playwright all passed
+  clean, in both the real-project and project-ID-unset configurations.
 
 ### 2026-09-15 — CMS migration Phase 5 (rich text) — final planned phase
 `homePage.mission.statement` changed from plain `text` to `richText`, and
