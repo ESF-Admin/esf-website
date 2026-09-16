@@ -56,9 +56,10 @@ routes: `app/api/revalidate/route.ts` (Sanity webhook → cache purge) and
   (`app/studio/[[...tool]]/`, config in `sanity.config.ts`).
 - Document types: `bulletin`, `sermon`, `siteSettings` (singleton),
   `navigation` (singleton), `homePage` (singleton), `page` (six documents,
-  one per slug: ministries/missions/history/contact/bulletins/sermons) —
-  see §6. **Whole-site CMS migration in progress** (Phase 0 + Phase 1 +
-  Phase 2 landed 2026-09-15) — see §15 "CMS content migration" and §17/§18.
+  one per slug: ministries/missions/history/contact/bulletins/sermons),
+  `ministry`, `missionCountry`, `testimonial` (repeatable) — see §6.
+  **Whole-site CMS migration in progress** (Phase 0 + 1 + 2 + 3 landed
+  2026-09-15) — see §15 "CMS content migration" and §17/§18.
 - Queries use `defineQuery` (from `next-sanity`) + Sanity TypeGen: run
   `npm run sanity:typegen` after any schema change to regenerate the
   committed `sanity.types.ts` (extracts `schema.json` first, gitignored).
@@ -137,32 +138,41 @@ components/
 ├── get-directions-button.tsx  Platform-aware Maps deep link (see §11)
 ├── ministries.tsx, missions.tsx, story.tsx  Full-page bodies — props-driven, no data fetching of their own
 ├── contact.tsx                 ContactSection — title/subtitle are props (Phase 2); org/socials still content.ts-direct (Phase 1 trim, unchanged)
-├── {ministries,missions,history}-teaser.tsx   Async server components — read getPage() so teasers can't drift from their full page
-└── testimonials/socials/theme-*  Self-explanatory, still content.ts-driven (Phase 3+)
+├── testimonials.tsx             Async server wrapper: fetches getHomePage().testimonials + getTestimonials(), renders TestimonialsClient
+├── testimonials-client.tsx      "use client" — carousel state/motion; pure props, no data fetching
+├── {ministries,missions,history}-teaser.tsx   Async server components — read getPage()/getMinistries()/getMissionCountries() so teasers can't drift from their full page
+└── socials/theme-*  Self-explanatory, still content.ts-driven
 
 lib/
 ├── content.ts                 All static copy + nav structure — the typed
 │                               *fallback defaults* content merges over (see
 │                               §15, "CMS content migration"); also
 │                               `pageSeoDefaults` (per-page <title>/description fallback)
+├── icon-map.ts                 ICON_NAMES (string allowlist, imported by the ministry
+│                               schema) + iconFor() (the only place a `ministry.icon`
+│                               string becomes a lucide component)
 └── sanity/
     ├── client.ts               getSanityClient() — memoized, null when unconfigured
     ├── queries.ts              defineQuery GROQ + sanityFetch(); getSiteSettings(),
-    │                           getNavigation(), getHomePage(), getPage(slug, fallback)
+    │                           getNavigation(), getHomePage(), getPage(slug, fallback),
+    │                           getMinistries(), getMissionCountries(), getTestimonials()
     └── defaults.ts             withDefaults(fallback, doc) — CMS-over-default merge
 
 sanity/
 ├── env.ts                     Reads NEXT_PUBLIC_SANITY_* (non-throwing — see §16)
 ├── structure.ts                Custom Studio sidebar + SINGLETON_TYPES lock list
-│                               (siteSettings, navigation, homePage, page — all locked as of Phase 2)
+│                               (siteSettings, navigation, homePage, page — locked;
+│                               ministry/missionCountry/testimonial are NOT locked —
+│                               genuinely repeatable, admin creates/deletes freely)
 └── schemaTypes/
-    ├── {bulletin,sermon,siteSettings,navigation,homePage,page,shared,index}.ts
+    ├── {bulletin,sermon,siteSettings,navigation,homePage,page,ministry,testimonial,missionCountry,shared,index}.ts
     └── objects/{ctaObject,seoObject,imageWithAlt,socialLink,navItem,richText}.ts
 
 scripts/
 ├── seed-bulletins.ts           One-time: migrates 33 hand-sourced bulletins
-└── seed-content.ts             Seeds siteSettings, navigation, homePage, and
-                                 the six page docs from lib/content.ts
+└── seed-content.ts             Seeds every CMS document (singletons, the six
+                                 pages, and the repeatable ministry/testimonial/
+                                 missionCountry documents) from lib/content.ts
                                  (npm run seed:content — idempotent)
 ```
 
@@ -244,9 +254,11 @@ array is missing/empty, `getNavigation()` falls back to `lib/content.ts`'s
 `lib/sanity/queries.ts`).
 
 ### `homePage` (singleton, `_id: "homePage"`)
-The homepage's hero, mission statement, and closing contact CTA. Every
-field falls back to `lib/content.ts`'s `hero`/`mission` consts (and a
-literal default for `contactCta`) via `withDefaults()`.
+The homepage's hero, mission statement, closing contact CTA, and the
+Student Stories section's heading + placeholder toggle (the stories
+themselves are separate `testimonial` documents — see below). Every field
+falls back to `lib/content.ts`'s `hero`/`mission`/`testimonials` consts
+(and a literal default for `contactCta`) via `withDefaults()`.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -254,6 +266,8 @@ literal default for `contactCta`) via `withDefaults()`.
 | `hero.primaryCta`, `.secondaryCta` | `cta` object | Label + href (href-allowlisted) |
 | `mission.title`, `.statement` | string/text | The homepage's mission-statement band |
 | `contactCta.title`, `.subtitle`, `.cta` | string/text/`cta` | Closing homepage CTA (was hardcoded in `contact-cta.tsx` before Phase 2) |
+| `testimonials.title`, `.subtitle` | string/text | "Student Stories" section heading |
+| `testimonials.showPlaceholderBadge` | boolean | Real toggle as of Phase 3 (was hardcoded `true` before) |
 
 ### `page` (six documents, `_id: "page.<slug>"`)
 One type for every simple content page — `ministries`, `missions`,
@@ -265,8 +279,8 @@ page's extra fields are hidden in Studio unless editing that page (see
 
 | Slug | Extra fields |
 |---|---|
-| `ministries` | `items[]` (name, body) — same 4 sample entries as today, `placeholder` badge still hardcoded `true` in `components/ministries.tsx` pending Phase 3 |
-| `missions` | `countries[]` (strings) — placeholder badge likewise still hardcoded |
+| `ministries` | `showPlaceholderBadge` (boolean, real toggle as of Phase 3) — the list itself is now `ministry` documents, not an inline field (Phase 2 had an inline `items[]`, unset by the Phase 3 seed script) |
+| `missions` | `showPlaceholderBadge` — the list itself is now `missionCountry` documents (Phase 2's inline `countries[]` likewise unset) |
 | `history` | `paragraphs[]` (text), `milestones[]` (year, title, body) |
 | `contact` | none — org/socials come from `siteSettings`, not this doc |
 | `bulletins`, `sermons` | `tabsLabel`, `emptyText` (archive-page-only strings, distinct from the homepage teaser's `lib/content.ts` `bulletins`/`sermons` consts, which stay separate — see §16) |
@@ -275,6 +289,32 @@ page's extra fields are hidden in Studio unless editing that page (see
 document is fetched with `getPage(slug, fallback)`, a field-by-field merge
 over a caller-supplied fallback shaped like that page's current
 `lib/content.ts` values.
+
+### `ministry`, `missionCountry`, `testimonial` (repeatable, Phase 3)
+Genuinely repeatable documents — **not** locked in `sanity/structure.ts`;
+the admin creates, reorders, and deletes these freely, unlike every other
+type above. Each has a manual `order` field (`orderField()` in
+`shared.ts`; seeded at 10/20/30/... so an insertion later doesn't require
+renumbering everything after it).
+
+| Type | Fields | Fetched by |
+|---|---|---|
+| `ministry` | `name`, `body`, `icon` (string, constrained to `lib/icon-map.ts`'s `ICON_NAMES`), `order` | `getMinistries()` |
+| `missionCountry` | `name`, `order` | `getMissionCountries()` |
+| `testimonial` | `quote`, `name`, `role`, `order` | `getTestimonials()` |
+
+Unlike `getPage()`'s field-by-field merge, these three getters return
+either the *entire* CMS list or the *entire* `lib/content.ts` sample list
+— never a mix — since publishing even one real entry is taken as a signal
+the admin has moved the whole list in, not that they're topping up a
+partial default.
+
+`ministry.icon` is a closed string enum; `lib/icon-map.ts`'s `iconFor()` is
+the **only** place that string becomes an actual lucide component (never
+a dynamic `lucide[name]` lookup from raw CMS input) — replacing the
+previous positional `icons[i]` mapping in `components/ministries.tsx`,
+which broke if items were ever reordered without also reordering the
+hardcoded icon array.
 
 ---
 
@@ -560,9 +600,15 @@ shippable — see §17/§18 for what has landed.
   they were already independently maintained. An admin editing the
   bulletins archive page's title in Studio won't change the homepage
   teaser's heading.
-- `ministries`/`missions` "Placeholder content" badges are still a
-  hardcoded `true` in their components, not a CMS field yet — Phase 3
-  adds a real toggle so an admin can turn the badge off themselves.
+- **Nav dropdown children stay manual/literal.** `navItem`'s `childSource`
+  field (e.g. `"ministries"`, `"missionCountries"`) exists on the schema
+  as a later-phase hook for auto-generating a nav dropdown from real
+  `ministry`/`missionCountry` documents, but the query layer never
+  resolves it — the Ministries and Missions nav dropdowns are still the
+  manual list seeded in Phase 1, unaffected by adding/removing/reordering
+  `ministry`/`missionCountry` documents in Phase 3. An admin who adds a
+  5th ministry must also add it to the nav item's manual children if they
+  want it in the dropdown.
 
 ---
 
@@ -580,14 +626,14 @@ dead-zone fix + visible hover/focus states, Playwright suite.
 bulletins/sermons), reverted to public same day — content is back. See §16
 for what's needed if it goes private again.
 
-**In progress / next:** whole-site CMS migration — Phases 0, 1 and 2 of 7
-landed 2026-09-15 (infra; site chrome via `siteSettings`/`navigation`;
-page copy + SEO via `page`/`homePage` + `generateMetadata()` on every
-route). All seeded and verified against the real project. Next up is
-Phase 3 (ministries/testimonials/mission-countries become their own
-documents; placeholder badges become a real toggle). Also: connect
-`esfworld.us`, admin to fill in real Ministries/Missions copy and start
-publishing Sermons.
+**In progress / next:** whole-site CMS migration — Phases 0 through 3 of 7
+landed 2026-09-15 (infra; site chrome; page copy + SEO; ministries/mission
+countries/testimonials promoted to their own repeatable documents with
+real placeholder-badge toggles). All seeded and verified against the real
+project. Next up is Phase 4 (images: `@sanity/image-url`,
+`<SanityImage>`, hero/ministry images, a `gallery` document). Also:
+connect `esfworld.us`, admin to fill in real Ministries/Missions copy and
+start publishing Sermons.
 
 **Planned (not started):** image gallery, hero background video (both via
 the CMS migration's Phase 4/5), video embeds explicitly deferred/out of
@@ -615,6 +661,55 @@ Student**s** Fellowship," but the real legal name used everywhere else in
 the codebase (`lib/content.ts`, `README.md`, page titles, meta
 descriptions) is "Evangelical Student Fellowship" with no "s"; the test
 was wrong, not the content. All 31 Playwright tests now pass.
+
+### 2026-09-15 — CMS migration Phase 3 (ministries, missions, testimonials become documents)
+Ministries, mission countries, and student stories are now their own
+repeatable Sanity documents (`ministry`, `missionCountry`, `testimonial`)
+instead of inline arrays on a `page`/`homePage` document — an admin can
+add, reorder, or remove one without touching anything else. The
+"Placeholder content" badge on Ministries, Missions, and Student Stories
+became a real `showPlaceholderBadge` toggle instead of a hardcoded `true`.
+
+- New schemas: `ministry` (name, body, `icon`, `order`), `missionCountry`
+  (name, `order`), `testimonial` (quote, name, role, `order`) — genuinely
+  repeatable, **not** added to `SINGLETON_TYPES`, so the admin creates/
+  deletes these freely (unlike every other type so far). `order` comes
+  from a new `orderField()` factory in `shared.ts`, seeded at 10/20/30/...
+- New `lib/icon-map.ts`: `ICON_NAMES` (a closed string enum the `ministry`
+  schema imports) and `iconFor()` (the only place a `ministry.icon` string
+  becomes a lucide component). Replaces the old positional
+  `icons[i]`-indexed-by-array-position mapping in `components/ministries.tsx`,
+  which would have silently shown the wrong icon for the wrong ministry if
+  an admin ever reordered the list.
+- Added `getMinistries()`, `getMissionCountries()`, `getTestimonials()` to
+  `lib/sanity/queries.ts` — each returns either the entire real list or
+  the entire `lib/content.ts` sample list, never a mix (unlike
+  `getPage()`'s field-by-field merge), since one real entry existing is
+  taken as a sign the admin moved the whole list in.
+- `page.ministries`/`page.missions` lost their Phase 2 inline
+  `items[]`/`countries[]` fields (now dead schema, since the seed script
+  `unset`s them on documents that still carry the old data) in favor of
+  `showPlaceholderBadge`; `homePage` gained a `testimonials` object
+  (title, subtitle, `showPlaceholderBadge`).
+- Split `components/testimonials.tsx` the same way `nav.tsx`/`hero.tsx`
+  were split: an async server wrapper plus a new `testimonials-client.tsx`
+  holding the carousel's interactive state/motion as pure props.
+  `ministries.tsx`, `missions.tsx`, and both teasers now take a
+  `placeholder` prop instead of hardcoding it.
+- Updated `scripts/seed-content.ts` to seed the 4 sample ministries, 7
+  mission countries, and 3 testimonials, and to backfill
+  `showPlaceholderBadge`/`testimonials` onto the `page`/`homePage`
+  documents that already existed from Phase 2 (via `setIfMissing`/`unset`
+  patches, same idempotent pattern as Phase 2's `defaultSeo` backfill).
+- Verified: typecheck/lint/build clean with the real project and with
+  `NEXT_PUBLIC_SANITY_PROJECT_ID` unset. All 31 Playwright tests pass
+  against both the fallback defaults and the real seeded documents (ran
+  twice — a stale `next start` process left over from local testing was
+  serving pre-Phase-3 code on port 3000 and caused two false-positive nav
+  failures the first time; killing it and re-running confirmed the
+  failures weren't a real regression). Manually verified in-browser:
+  `/ministries` renders all 4 real `ministry` documents with correct
+  per-item icons.
 
 ### 2026-09-15 — CMS migration Phase 2 (page copy + SEO)
 Every page's own copy and search/sharing metadata is now editable from

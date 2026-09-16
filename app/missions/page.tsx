@@ -3,13 +3,13 @@ import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Missions } from "@/components/missions";
 import { missions, pageSeoDefaults } from "@/lib/content";
-import { getPage } from "@/lib/sanity/queries";
+import { getPage, getMissionCountries } from "@/lib/sanity/queries";
 import { pageMetadata } from "@/lib/seo";
 
 const FALLBACK = {
   title: missions.title,
   intro: missions.subtitle,
-  countries: missions.countries as readonly string[],
+  showPlaceholderBadge: missions.placeholder as boolean,
   seo: pageSeoDefaults.missions,
 };
 
@@ -23,13 +23,21 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function MissionsPage() {
-  const data = await getPage("missions", FALLBACK);
+  const [data, countries] = await Promise.all([
+    getPage("missions", FALLBACK),
+    getMissionCountries(),
+  ]);
 
   return (
     <>
       <Nav />
       <main id="main" className="pt-20">
-        <Missions title={data.title} subtitle={data.intro} countries={data.countries} />
+        <Missions
+          title={data.title}
+          subtitle={data.intro}
+          placeholder={data.showPlaceholderBadge}
+          countries={countries}
+        />
       </main>
       <Footer />
     </>

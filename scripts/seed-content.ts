@@ -1,10 +1,12 @@
 /**
- * Seeds the siteSettings, navigation and homePage singletons, plus the six
+ * Seeds the siteSettings, navigation and homePage singletons, the six
  * `page` documents (ministries/missions/history/contact/bulletins/sermons),
- * from lib/content.ts's current defaults — so every CMS document starts out
+ * and the repeatable `ministry`/`missionCountry`/`testimonial` documents —
+ * from lib/content.ts's current defaults, so every CMS document starts out
  * identical to what the site already renders. Safe to re-run
- * (createIfNotExists is a no-op once a document exists) and safe to run
- * before the reading components are wired up.
+ * (createIfNotExists is a no-op once a document exists, and the `setIfMissing`/
+ * `unset` patches for fields added after an earlier phase are themselves
+ * idempotent) and safe to run before the reading components are wired up.
  *
  *   npx sanity exec scripts/seed-content.ts --with-user-token
  */
@@ -21,8 +23,13 @@ import {
   missions,
   story,
   contact,
+  testimonials,
   pageSeoDefaults,
 } from "../lib/content";
+
+// Same positional assignment components/ministries.tsx used before real
+// `icon` fields existed — only used here, to seed the 4 sample ministries.
+const SAMPLE_MINISTRY_ICONS = ["church", "handHeart", "book", "baby"];
 
 const client = getCliClient();
 
@@ -102,6 +109,21 @@ async function run() {
       subtitle: "Reach out about a gathering, a ministry, or just to say hello.",
       cta: cta("Get in touch", "/contact"),
     },
+    testimonials: {
+      title: testimonials.title,
+      subtitle: testimonials.subtitle,
+      showPlaceholderBadge: testimonials.placeholder,
+    },
+  });
+  // homePage may already exist from Phase 2, before `testimonials` existed.
+  tx.patch("homePage", {
+    setIfMissing: {
+      testimonials: {
+        title: testimonials.title,
+        subtitle: testimonials.subtitle,
+        showPlaceholderBadge: testimonials.placeholder,
+      },
+    },
   });
 
   tx.createIfNotExists({
@@ -110,8 +132,16 @@ async function run() {
     slug: "ministries",
     title: ministries.title,
     intro: ministries.subtitle,
-    items: ministries.items.map((m) => ({ _type: "object", _key: m.name, ...m })),
+    showPlaceholderBadge: ministries.placeholder,
     seo: seo("ministries"),
+  });
+  // page.ministries may already exist from Phase 2, when the ministries
+  // list itself lived inline as `items` — now it's its own document type
+  // (see the `ministry` documents below), so drop the stale field and
+  // backfill the new toggle if this document predates it.
+  tx.patch("page.ministries", {
+    unset: ["items"],
+    setIfMissing: { showPlaceholderBadge: ministries.placeholder },
   });
 
   tx.createIfNotExists({
@@ -120,8 +150,12 @@ async function run() {
     slug: "missions",
     title: missions.title,
     intro: missions.subtitle,
-    countries: [...missions.countries],
+    showPlaceholderBadge: missions.placeholder,
     seo: seo("missions"),
+  });
+  tx.patch("page.missions", {
+    unset: ["countries"],
+    setIfMissing: { showPlaceholderBadge: missions.placeholder },
   });
 
   tx.createIfNotExists({
@@ -166,6 +200,37 @@ async function run() {
     tabsLabel: "Sermon language",
     emptyText: "No sermons have been published in this language yet.",
     seo: seo("sermons"),
+  });
+
+  ministries.items.forEach((m, i) => {
+    tx.createIfNotExists({
+      _id: `ministry.${m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      _type: "ministry",
+      name: m.name,
+      body: m.body,
+      icon: SAMPLE_MINISTRY_ICONS[i],
+      order: (i + 1) * 10,
+    });
+  });
+
+  missions.countries.forEach((name, i) => {
+    tx.createIfNotExists({
+      _id: `missionCountry.${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      _type: "missionCountry",
+      name,
+      order: (i + 1) * 10,
+    });
+  });
+
+  testimonials.items.forEach((t, i) => {
+    tx.createIfNotExists({
+      _id: `testimonial.${i + 1}`,
+      _type: "testimonial",
+      quote: t.quote,
+      name: t.name,
+      role: t.role,
+      order: (i + 1) * 10,
+    });
   });
 
   const result = await tx.commit();

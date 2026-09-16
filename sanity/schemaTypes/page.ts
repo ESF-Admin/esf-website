@@ -43,34 +43,17 @@ export const page = defineType({
     }),
     ...pageCopyFields(),
 
-    // Ministries page only
+    // Ministries and Missions pages only — the lists themselves live in
+    // their own `ministry`/`missionCountry` documents (see
+    // lib/sanity/queries.ts's getMinistries()/getMissionCountries()); this
+    // just controls whether the page shows the "Placeholder content" badge.
     defineField({
-      name: "items",
-      title: "Ministries",
-      type: "array",
-      of: [
-        {
-          type: "object",
-          fields: [
-            defineField({ name: "name", title: "Name", type: "string", validation: (r) => r.required().max(60) }),
-            defineField({ name: "body", title: "Description", type: "text", rows: 2, validation: (r) => r.required().max(240) }),
-          ],
-          preview: { select: { title: "name", subtitle: "body" } },
-        },
-      ],
+      name: "showPlaceholderBadge",
+      title: "Show \"Placeholder content\" badge",
+      type: "boolean",
+      description: "Turn this off once the list below has real, final content.",
       group: "content",
-      ...onlyFor("ministries"),
-    }),
-
-    // Missions page only
-    defineField({
-      name: "countries",
-      title: "Countries",
-      type: "array",
-      of: [{ type: "string" }],
-      description: "One entry per country where ESF or a partner serves.",
-      group: "content",
-      ...onlyFor("missions"),
+      ...onlyFor("ministries", "missions"),
     }),
 
     // History page only

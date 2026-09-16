@@ -1,27 +1,34 @@
 import Link from "next/link";
-import { ArrowRight, Church, HandHeart, BookOpenText, Baby } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ministries } from "@/lib/content";
-import { getPage } from "@/lib/sanity/queries";
+import { getPage, getMinistries } from "@/lib/sanity/queries";
 import { Section } from "./section";
 import { RevealGroup, RevealItem } from "./reveal";
-
-const icons = [Church, HandHeart, BookOpenText, Baby];
+import { iconFor } from "@/lib/icon-map";
 
 const FALLBACK = {
   title: ministries.title,
   intro: ministries.subtitle,
-  items: [...ministries.items],
+  showPlaceholderBadge: ministries.placeholder as boolean,
 };
 
 /** Homepage teaser — full detail lives at /ministries, same CMS-backed data. */
 export async function MinistriesTeaser() {
-  const data = await getPage("ministries", FALLBACK);
+  const [data, items] = await Promise.all([
+    getPage("ministries", FALLBACK),
+    getMinistries(),
+  ]);
 
   return (
-    <Section id="ministries" title={data.title} subtitle={data.intro} placeholder>
+    <Section
+      id="ministries"
+      title={data.title}
+      subtitle={data.intro}
+      placeholder={data.showPlaceholderBadge}
+    >
       <RevealGroup as="div" className="flex flex-wrap gap-3">
-        {data.items.map((m, i) => {
-          const Icon = icons[i];
+        {items.map((m) => {
+          const Icon = iconFor(m.icon);
           return (
             <RevealItem
               as="span"

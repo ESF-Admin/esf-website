@@ -93,6 +93,33 @@ export const homePage = defineType({
         }),
       ],
     }),
+    defineField({
+      name: "testimonials",
+      title: "Student Stories section",
+      type: "object",
+      description: "The stories themselves are separate \"Student story\" documents.",
+      fields: [
+        defineField({
+          name: "title",
+          title: "Heading",
+          type: "string",
+          validation: (rule) => rule.required().max(60),
+        }),
+        defineField({
+          name: "subtitle",
+          title: "Subtitle",
+          type: "text",
+          rows: 2,
+          validation: (rule) => rule.max(160),
+        }),
+        defineField({
+          name: "showPlaceholderBadge",
+          title: "Show \"Placeholder content\" badge",
+          type: "boolean",
+          description: "Turn this off once real student stories are published below.",
+        }),
+      ],
+    }),
   ],
   preview: {
     prepare: () => ({ title: "Home page" }),

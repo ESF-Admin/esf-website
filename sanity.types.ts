@@ -105,6 +105,40 @@ export type Cta = {
   href: string;
 };
 
+export type MissionCountry = {
+  _id: string;
+  _type: "missionCountry";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  name: string;
+  order: number;
+};
+
+export type Testimonial = {
+  _id: string;
+  _type: "testimonial";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  quote: string;
+  name: string;
+  role: string;
+  order: number;
+};
+
+export type Ministry = {
+  _id: string;
+  _type: "ministry";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  name: string;
+  body: string;
+  icon: "church" | "handHeart" | "book" | "baby" | "globe" | "users";
+  order: number;
+};
+
 export type Page = {
   _id: string;
   _type: "page";
@@ -117,12 +151,7 @@ export type Page = {
   title: string;
   intro?: string;
   seo?: Seo;
-  items?: Array<{
-    name: string;
-    body: string;
-    _key: string;
-  }>;
-  countries?: Array<string>;
+  showPlaceholderBadge?: boolean;
   paragraphs?: Array<string>;
   milestones?: Array<{
     year: string;
@@ -155,6 +184,11 @@ export type HomePage = {
     title: string;
     subtitle?: string;
     cta?: Cta;
+  };
+  testimonials?: {
+    title: string;
+    subtitle?: string;
+    showPlaceholderBadge?: boolean;
   };
 };
 
@@ -361,6 +395,9 @@ export type AllSanitySchemaTypes =
   | SanityImageHotspot
   | Seo
   | Cta
+  | MissionCountry
+  | Testimonial
+  | Ministry
   | Page
   | HomePage
   | Navigation
@@ -458,6 +495,31 @@ export type SITE_SETTINGS_QUERY_RESULT =
         subtitle?: string;
         cta?: Cta;
       };
+      testimonials?: {
+        title: string;
+        subtitle?: string;
+        showPlaceholderBadge?: boolean;
+      };
+    }
+  | {
+      _id: "siteSettings";
+      _type: "ministry";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      name: string;
+      body: string;
+      icon: "baby" | "book" | "church" | "globe" | "handHeart" | "users";
+      order: number;
+    }
+  | {
+      _id: "siteSettings";
+      _type: "missionCountry";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      name: string;
+      order: number;
     }
   | {
       _id: "siteSettings";
@@ -488,12 +550,7 @@ export type SITE_SETTINGS_QUERY_RESULT =
       title: string;
       intro?: string;
       seo?: Seo;
-      items?: Array<{
-        name: string;
-        body: string;
-        _key: string;
-      }>;
-      countries?: Array<string>;
+      showPlaceholderBadge?: boolean;
       paragraphs?: Array<string>;
       milestones?: Array<{
         year: string;
@@ -592,6 +649,17 @@ export type SITE_SETTINGS_QUERY_RESULT =
       navCtaLabel?: string;
       defaultSeo?: Seo;
     }
+  | {
+      _id: "siteSettings";
+      _type: "testimonial";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      quote: string;
+      name: string;
+      role: string;
+      order: number;
+    }
   | null;
 
 // Source: lib/sanity/queries.ts
@@ -610,13 +678,6 @@ export type NAVIGATION_QUERY_RESULT =
     }
   | {
       items: null;
-    }
-  | {
-      items: Array<{
-        label: null;
-        href: null;
-        children: null;
-      }> | null;
     }
   | null;
 
@@ -667,6 +728,31 @@ export type HOME_PAGE_QUERY_RESULT =
         subtitle?: string;
         cta?: Cta;
       };
+      testimonials?: {
+        title: string;
+        subtitle?: string;
+        showPlaceholderBadge?: boolean;
+      };
+    }
+  | {
+      _id: "homePage";
+      _type: "ministry";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      name: string;
+      body: string;
+      icon: "baby" | "book" | "church" | "globe" | "handHeart" | "users";
+      order: number;
+    }
+  | {
+      _id: "homePage";
+      _type: "missionCountry";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      name: string;
+      order: number;
     }
   | {
       _id: "homePage";
@@ -697,12 +783,7 @@ export type HOME_PAGE_QUERY_RESULT =
       title: string;
       intro?: string;
       seo?: Seo;
-      items?: Array<{
-        name: string;
-        body: string;
-        _key: string;
-      }>;
-      countries?: Array<string>;
+      showPlaceholderBadge?: boolean;
       paragraphs?: Array<string>;
       milestones?: Array<{
         year: string;
@@ -801,6 +882,17 @@ export type HOME_PAGE_QUERY_RESULT =
       navCtaLabel?: string;
       defaultSeo?: Seo;
     }
+  | {
+      _id: "homePage";
+      _type: "testimonial";
+      _createdAt: string;
+      _updatedAt: string;
+      _rev: string;
+      quote: string;
+      name: string;
+      role: string;
+      order: number;
+    }
   | null;
 
 // Source: lib/sanity/queries.ts
@@ -818,12 +910,7 @@ export type PAGE_QUERY_RESULT = {
   title: string;
   intro?: string;
   seo?: Seo;
-  items?: Array<{
-    name: string;
-    body: string;
-    _key: string;
-  }>;
-  countries?: Array<string>;
+  showPlaceholderBadge?: boolean;
   paragraphs?: Array<string>;
   milestones?: Array<{
     year: string;
@@ -834,6 +921,31 @@ export type PAGE_QUERY_RESULT = {
   tabsLabel?: string;
   emptyText?: string;
 } | null;
+
+// Source: lib/sanity/queries.ts
+// Variable: MINISTRIES_QUERY
+// Query: *[_type == "ministry"] | order(order asc) { name, body, icon }
+export type MINISTRIES_QUERY_RESULT = Array<{
+  name: string;
+  body: string;
+  icon: "baby" | "book" | "church" | "globe" | "handHeart" | "users";
+}>;
+
+// Source: lib/sanity/queries.ts
+// Variable: MISSION_COUNTRIES_QUERY
+// Query: *[_type == "missionCountry"] | order(order asc) { name }
+export type MISSION_COUNTRIES_QUERY_RESULT = Array<{
+  name: string;
+}>;
+
+// Source: lib/sanity/queries.ts
+// Variable: TESTIMONIALS_QUERY
+// Query: *[_type == "testimonial"] | order(order asc) { quote, name, role }
+export type TESTIMONIALS_QUERY_RESULT = Array<{
+  quote: string;
+  name: string;
+  role: string;
+}>;
 
 // Query TypeMap
 import "@sanity/client";
@@ -847,5 +959,8 @@ declare module "@sanity/client" {
     '\n  *[_id == "navigation"][0]{\n    items[]{ label, href, children[]{ label, href } }\n  }\n': NAVIGATION_QUERY_RESULT;
     '*[_id == "homePage"][0]': HOME_PAGE_QUERY_RESULT;
     '*[_type == "page" && slug == $slug][0]': PAGE_QUERY_RESULT;
+    '\n  *[_type == "ministry"] | order(order asc) { name, body, icon }\n': MINISTRIES_QUERY_RESULT;
+    '\n  *[_type == "missionCountry"] | order(order asc) { name }\n': MISSION_COUNTRIES_QUERY_RESULT;
+    '\n  *[_type == "testimonial"] | order(order asc) { quote, name, role }\n': TESTIMONIALS_QUERY_RESULT;
   }
 }

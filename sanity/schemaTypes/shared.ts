@@ -29,6 +29,23 @@ export function hrefField(name = "href", title = "Link") {
   });
 }
 
+/**
+ * Manual sort order for a repeatable document type (ministry, testimonial,
+ * missionCountry, ...) shown in a plain list, not a drag-orderable one —
+ * simple, and fine at the handful-of-items scale these lists actually run
+ * at. Seed scripts space values by 10 (10, 20, 30, ...) so a later
+ * insertion doesn't require renumbering everything after it.
+ */
+export function orderField() {
+  return defineField({
+    name: "order",
+    title: "Order",
+    type: "number",
+    description: "Lower numbers show first. Leave gaps (10, 20, 30) so you can insert one later.",
+    validation: (rule) => rule.required().integer(),
+  });
+}
+
 /** Field groups shared by every page-like document, so the Studio sidebar reads the same way everywhere. */
 export const contentGroups = [
   { name: "content", title: "Content", default: true },

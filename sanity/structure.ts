@@ -58,6 +58,10 @@ export const structure: StructureResolver = (S) =>
             ),
         ),
       S.divider(),
+      S.documentTypeListItem("ministry").title("Ministries"),
+      S.documentTypeListItem("missionCountry").title("Mission countries"),
+      S.documentTypeListItem("testimonial").title("Student stories"),
+      S.divider(),
       S.documentTypeListItem("bulletin").title("Bulletins"),
       S.documentTypeListItem("sermon").title("Sermons"),
     ]);

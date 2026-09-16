@@ -1,24 +1,33 @@
 import Link from "next/link";
 import { ArrowRight, Globe2 } from "lucide-react";
 import { missions } from "@/lib/content";
-import { getPage } from "@/lib/sanity/queries";
+import { getPage, getMissionCountries } from "@/lib/sanity/queries";
 import { Section } from "./section";
 import { RevealGroup, RevealItem } from "./reveal";
 
 const FALLBACK = {
   title: missions.title,
   intro: missions.subtitle,
-  countries: missions.countries as readonly string[],
+  showPlaceholderBadge: missions.placeholder as boolean,
 };
 
 /** Homepage teaser — full detail lives at /missions, same CMS-backed data. */
 export async function MissionsTeaser() {
-  const data = await getPage("missions", FALLBACK);
+  const [data, countries] = await Promise.all([
+    getPage("missions", FALLBACK),
+    getMissionCountries(),
+  ]);
 
   return (
-    <Section id="missions" title={data.title} subtitle={data.intro} placeholder tinted>
+    <Section
+      id="missions"
+      title={data.title}
+      subtitle={data.intro}
+      placeholder={data.showPlaceholderBadge}
+      tinted
+    >
       <RevealGroup as="div" className="flex flex-wrap gap-3">
-        {data.countries.map((country) => (
+        {countries.map((country) => (
           <RevealItem
             as="span"
             key={country}

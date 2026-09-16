@@ -9,6 +9,9 @@ import {
   navLinks,
   hero,
   mission,
+  ministries,
+  missions,
+  testimonials,
   type BulletinEntry,
   type SermonEntry,
   type DocLocale,
@@ -227,6 +230,7 @@ type HomePageDoc = {
   };
   mission?: { title?: string; statement?: string };
   contactCta?: { title?: string; subtitle?: string; cta?: CtaDoc };
+  testimonials?: { title?: string; subtitle?: string; showPlaceholderBadge?: boolean };
 };
 
 const HOME_PAGE_QUERY = defineQuery(`*[_id == "homePage"][0]`);
@@ -237,15 +241,24 @@ const DEFAULT_CONTACT_CTA = {
   cta: { label: "Get in touch", href: "/contact" },
 };
 
+const DEFAULT_TESTIMONIALS_SECTION = {
+  title: testimonials.title,
+  subtitle: testimonials.subtitle,
+  showPlaceholderBadge: testimonials.placeholder as boolean,
+};
+
 export type HomePage = {
   hero: typeof hero;
   mission: typeof mission;
   contactCta: typeof DEFAULT_CONTACT_CTA;
+  testimonials: typeof DEFAULT_TESTIMONIALS_SECTION;
 };
 
 /**
- * Homepage hero, mission statement, and closing contact CTA — the
- * homePage singleton, merged over lib/content.ts's defaults.
+ * Homepage hero, mission statement, closing contact CTA, and the Student
+ * Stories section's heading/badge (the stories themselves come from
+ * getTestimonials()) — the homePage singleton, merged over
+ * lib/content.ts's defaults.
  */
 export async function getHomePage(): Promise<HomePage> {
   const doc = await sanityFetch<HomePageDoc | null>(
@@ -254,7 +267,15 @@ export async function getHomePage(): Promise<HomePage> {
     ["homePage"],
     null,
   );
-  return withDefaults({ hero, mission, contactCta: DEFAULT_CONTACT_CTA }, doc);
+  return withDefaults(
+    {
+      hero,
+      mission,
+      contactCta: DEFAULT_CONTACT_CTA,
+      testimonials: DEFAULT_TESTIMONIALS_SECTION,
+    },
+    doc,
+  );
 }
 
 const PAGE_QUERY = defineQuery(`*[_type == "page" && slug == $slug][0]`);
@@ -277,4 +298,73 @@ export async function getPage<T extends object>(
     null,
   );
   return withDefaults(fallback, doc);
+}
+
+type MinistryDoc = { name: string; body: string; icon: string };
+
+const MINISTRIES_QUERY = defineQuery(`
+  *[_type == "ministry"] | order(order asc) { name, body, icon }
+`);
+
+/**
+ * Ministry cards — real `ministry` documents, or lib/content.ts's sample
+ * items if none exist yet. Unlike getPage(), this list either comes
+ * entirely from Sanity or entirely from the default: an admin publishing
+ * even one real ministry is expected to have moved all of them in, not to
+ * be topping up a partial default list.
+ */
+export async function getMinistries(): Promise<MinistryDoc[]> {
+  const entries = await sanityFetch<MinistryDoc[]>(
+    MINISTRIES_QUERY,
+    {},
+    ["ministry"],
+    [],
+  );
+  return entries.length
+    ? entries
+    : ministries.items.map((m, i) => ({ ...m, icon: FALLBACK_MINISTRY_ICONS[i] }));
+}
+
+// Positional icon assignment for lib/content.ts's sample ministries only
+// (real `ministry` documents always carry their own `icon` field) — kept
+// here, not in lib/content.ts, since it's purely a fallback-rendering
+// detail tied to how getMinistries() shapes its result.
+const FALLBACK_MINISTRY_ICONS = ["church", "handHeart", "book", "baby"];
+
+const MISSION_COUNTRIES_QUERY = defineQuery(`
+  *[_type == "missionCountry"] | order(order asc) { name }
+`);
+
+/**
+ * Mission-country pills — real `missionCountry` documents, or
+ * lib/content.ts's sample list if none exist yet.
+ */
+export async function getMissionCountries(): Promise<string[]> {
+  const entries = await sanityFetch<{ name: string }[]>(
+    MISSION_COUNTRIES_QUERY,
+    {},
+    ["missionCountry"],
+    [],
+  );
+  return entries.length ? entries.map((c) => c.name) : [...missions.countries];
+}
+
+type TestimonialDoc = { quote: string; name: string; role: string };
+
+const TESTIMONIALS_QUERY = defineQuery(`
+  *[_type == "testimonial"] | order(order asc) { quote, name, role }
+`);
+
+/**
+ * Student-story carousel entries — real `testimonial` documents, or
+ * lib/content.ts's sample quotes if none exist yet.
+ */
+export async function getTestimonials(): Promise<TestimonialDoc[]> {
+  const entries = await sanityFetch<TestimonialDoc[]>(
+    TESTIMONIALS_QUERY,
+    {},
+    ["testimonial"],
+    [],
+  );
+  return entries.length ? entries : [...testimonials.items];
 }
