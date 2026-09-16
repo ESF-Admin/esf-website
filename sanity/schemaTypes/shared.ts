@@ -139,6 +139,33 @@ export function fileTypeValidator(
   };
 }
 
+/**
+ * Same dereference-and-check idiom as fileTypeValidator(), for a max file
+ * size in bytes. Sanity's file/image types have no built-in size rule —
+ * this exists specifically for the hero background video, which autoplays
+ * for every visitor and needs a hard ceiling, not just an advisory
+ * description an admin might not read.
+ */
+export function fileSizeValidator(maxBytes: number) {
+  return async (file: FileFieldValue, context: { getClient: (options: { apiVersion: string }) => { fetch: <T>(query: string, params?: Record<string, unknown>) => Promise<T> } }) => {
+    const assetId = file?.asset?._ref;
+    if (!assetId) return true;
+
+    const client = context.getClient({ apiVersion });
+    const asset = await client.fetch<{ size?: number } | null>(
+      `*[_id == $id][0]{size}`,
+      { id: assetId },
+    );
+    if (!asset?.size) return true; // asset still propagating — don't block on a race
+
+    const maxMB = Math.round(maxBytes / 1_000_000);
+    const gotMB = (asset.size / 1_000_000).toFixed(1);
+    return asset.size <= maxBytes
+      ? true
+      : `File is ${gotMB}MB — please compress it to ${maxMB}MB or smaller.`;
+  };
+}
+
 export const WORD_MIME_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

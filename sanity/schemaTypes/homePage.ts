@@ -1,4 +1,9 @@
 import { defineField, defineType } from "sanity";
+import { fileTypeValidator, fileSizeValidator } from "./shared";
+
+const MAX_HERO_VIDEO_BYTES = 15_000_000;
+
+type HeroParent = { video?: { asset?: unknown } };
 
 /**
  * Singleton — the homepage's hero, mission statement, and closing
@@ -44,6 +49,34 @@ export const homePage = defineType({
           name: "secondaryCta",
           title: "Secondary button",
           type: "cta",
+        }),
+        defineField({
+          name: "video",
+          title: "Background video",
+          type: "file",
+          options: { accept: "video/mp4,video/webm" },
+          description:
+            "Short, silent, looping video behind the hero. Keep it small — under 15MB — since it autoplays for every visitor. Optional; the decorative illustration shows instead when empty.",
+          validation: (rule) =>
+            rule
+              .custom(
+                fileTypeValidator("MP4 or WebM video", ["video/mp4", "video/webm"], ["mp4", "webm"]),
+              )
+              .custom(fileSizeValidator(MAX_HERO_VIDEO_BYTES)),
+        }),
+        defineField({
+          name: "poster",
+          title: "Video poster image",
+          type: "imageWithAlt",
+          description:
+            "Shown while the video loads, and instead of the video for visitors whose device requests reduced motion. Required when a background video is set.",
+          validation: (rule) =>
+            rule.custom((value, context) => {
+              const parent = context.parent as HeroParent | undefined;
+              return parent?.video?.asset && !value
+                ? "Add a poster image — required when a background video is set."
+                : true;
+            }),
         }),
       ],
     }),

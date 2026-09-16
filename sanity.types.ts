@@ -77,22 +77,6 @@ export type ImageWithAlt = {
   caption?: string;
 };
 
-export type SanityImageCrop = {
-  _type: "sanity.imageCrop";
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-};
-
-export type SanityImageHotspot = {
-  _type: "sanity.imageHotspot";
-  x: number;
-  y: number;
-  height: number;
-  width: number;
-};
-
 export type Seo = {
   _type: "seo";
   title?: string;
@@ -163,6 +147,13 @@ export type Page = {
   emptyText?: string;
 };
 
+export type SanityFileAssetReference = {
+  _ref: string;
+  _type: "reference";
+  _weak?: boolean;
+  [internalGroqTypeReferenceTo]?: "sanity.fileAsset";
+};
+
 export type HomePage = {
   _id: string;
   _type: "homePage";
@@ -175,6 +166,12 @@ export type HomePage = {
     body: string;
     primaryCta?: Cta;
     secondaryCta?: Cta;
+    video?: {
+      asset?: SanityFileAssetReference;
+      media?: unknown;
+      _type: "file";
+    };
+    poster?: ImageWithAlt;
   };
   mission?: {
     title: string;
@@ -190,6 +187,22 @@ export type HomePage = {
     subtitle?: string;
     showPlaceholderBadge?: boolean;
   };
+};
+
+export type SanityImageCrop = {
+  _type: "sanity.imageCrop";
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+};
+
+export type SanityImageHotspot = {
+  _type: "sanity.imageHotspot";
+  x: number;
+  y: number;
+  height: number;
+  width: number;
 };
 
 export type Navigation = {
@@ -227,13 +240,6 @@ export type SiteSettings = {
   footerBlurb?: string;
   navCtaLabel?: string;
   defaultSeo?: Seo;
-};
-
-export type SanityFileAssetReference = {
-  _ref: string;
-  _type: "reference";
-  _weak?: boolean;
-  [internalGroqTypeReferenceTo]?: "sanity.fileAsset";
 };
 
 export type Sermon = {
@@ -391,18 +397,18 @@ export type AllSanitySchemaTypes =
   | SocialLink
   | SanityImageAssetReference
   | ImageWithAlt
-  | SanityImageCrop
-  | SanityImageHotspot
   | Seo
   | Cta
   | MissionCountry
   | Testimonial
   | Ministry
   | Page
+  | SanityFileAssetReference
   | HomePage
+  | SanityImageCrop
+  | SanityImageHotspot
   | Navigation
   | SiteSettings
-  | SanityFileAssetReference
   | Sermon
   | Bulletin
   | SanityImagePaletteSwatch
@@ -485,6 +491,12 @@ export type SITE_SETTINGS_QUERY_RESULT =
         body: string;
         primaryCta?: Cta;
         secondaryCta?: Cta;
+        video?: {
+          asset?: SanityFileAssetReference;
+          media?: unknown;
+          _type: "file";
+        };
+        poster?: ImageWithAlt;
       };
       mission?: {
         title: string;
@@ -683,7 +695,7 @@ export type NAVIGATION_QUERY_RESULT =
 
 // Source: lib/sanity/queries.ts
 // Variable: HOME_PAGE_QUERY
-// Query: *[_id == "homePage"][0]
+// Query: *[_id == "homePage"][0]{    ...,    hero{      ...,      "video": video.asset->url,      poster{ ..., alt, caption, "lqip": asset->metadata.lqip, "dim": asset->metadata.dimensions{width, height} }    }  }
 export type HOME_PAGE_QUERY_RESULT =
   | {
       _id: "homePage";
@@ -705,6 +717,7 @@ export type HOME_PAGE_QUERY_RESULT =
         media?: unknown;
         _type: "file";
       };
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -712,13 +725,28 @@ export type HOME_PAGE_QUERY_RESULT =
       _createdAt: string;
       _updatedAt: string;
       _rev: string;
-      hero?: {
+      hero: {
         eyebrow?: string;
         title: string;
         body: string;
         primaryCta?: Cta;
         secondaryCta?: Cta;
-      };
+        video: string | null;
+        poster: {
+          _type: "imageWithAlt";
+          asset?: SanityImageAssetReference;
+          media?: unknown;
+          hotspot?: SanityImageHotspot;
+          crop?: SanityImageCrop;
+          alt: string;
+          caption: string | null;
+          lqip: string | null;
+          dim: {
+            width: number;
+            height: number;
+          } | null;
+        } | null;
+      } | null;
       mission?: {
         title: string;
         statement: string;
@@ -744,6 +772,7 @@ export type HOME_PAGE_QUERY_RESULT =
       body: string;
       icon: "baby" | "book" | "church" | "globe" | "handHeart" | "users";
       order: number;
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -753,6 +782,7 @@ export type HOME_PAGE_QUERY_RESULT =
       _rev: string;
       name: string;
       order: number;
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -765,6 +795,7 @@ export type HOME_PAGE_QUERY_RESULT =
           _key: string;
         } & NavItem
       >;
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -793,6 +824,7 @@ export type HOME_PAGE_QUERY_RESULT =
       }>;
       tabsLabel?: string;
       emptyText?: string;
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -814,6 +846,7 @@ export type HOME_PAGE_QUERY_RESULT =
       path: string;
       url: string;
       source?: SanityAssetSourceData;
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -836,6 +869,7 @@ export type HOME_PAGE_QUERY_RESULT =
       url: string;
       metadata?: SanityImageMetadata;
       source?: SanityAssetSourceData;
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -858,6 +892,7 @@ export type HOME_PAGE_QUERY_RESULT =
         media?: unknown;
         _type: "file";
       };
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -881,6 +916,7 @@ export type HOME_PAGE_QUERY_RESULT =
       footerBlurb?: string;
       navCtaLabel?: string;
       defaultSeo?: Seo;
+      hero: null;
     }
   | {
       _id: "homePage";
@@ -892,6 +928,7 @@ export type HOME_PAGE_QUERY_RESULT =
       name: string;
       role: string;
       order: number;
+      hero: null;
     }
   | null;
 
@@ -957,7 +994,7 @@ declare module "@sanity/client" {
     '\n  count(*[_type == "sermon" && locale == $locale])\n': SERMONS_COUNT_QUERY_RESULT;
     '*[_id == "siteSettings"][0]': SITE_SETTINGS_QUERY_RESULT;
     '\n  *[_id == "navigation"][0]{\n    items[]{ label, href, children[]{ label, href } }\n  }\n': NAVIGATION_QUERY_RESULT;
-    '*[_id == "homePage"][0]': HOME_PAGE_QUERY_RESULT;
+    '\n  *[_id == "homePage"][0]{\n    ...,\n    hero{\n      ...,\n      "video": video.asset->url,\n      poster{ ..., alt, caption, "lqip": asset->metadata.lqip, "dim": asset->metadata.dimensions{width, height} }\n    }\n  }\n': HOME_PAGE_QUERY_RESULT;
     '*[_type == "page" && slug == $slug][0]': PAGE_QUERY_RESULT;
     '\n  *[_type == "ministry"] | order(order asc) { name, body, icon }\n': MINISTRIES_QUERY_RESULT;
     '\n  *[_type == "missionCountry"] | order(order asc) { name }\n': MISSION_COUNTRIES_QUERY_RESULT;

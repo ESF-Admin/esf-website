@@ -1,6 +1,7 @@
 import { defineQuery } from "next-sanity";
 import { getSanityClient } from "./client";
 import { withDefaults } from "./defaults";
+import type { SanityImageData } from "./image";
 import {
   org,
   service,
@@ -227,13 +228,31 @@ type HomePageDoc = {
     body?: string;
     primaryCta?: CtaDoc;
     secondaryCta?: CtaDoc;
+    video?: string;
+    poster?: SanityImageData | null;
   };
   mission?: { title?: string; statement?: string };
   contactCta?: { title?: string; subtitle?: string; cta?: CtaDoc };
   testimonials?: { title?: string; subtitle?: string; showPlaceholderBadge?: boolean };
 };
 
-const HOME_PAGE_QUERY = defineQuery(`*[_id == "homePage"][0]`);
+// The GROQ image field selection shared by anything that projects an
+// `imageWithAlt` field: `...` keeps the raw image (asset ref, hotspot,
+// crop) that urlFor() needs to build a URL, alongside `alt`/`caption` and
+// the two fields only obtainable by dereferencing the asset — `dim`
+// (next/image requires width/height up front) and `lqip` (blur placeholder).
+const IMAGE_FIELDS = `{ ..., alt, caption, "lqip": asset->metadata.lqip, "dim": asset->metadata.dimensions{width, height} }`;
+
+const HOME_PAGE_QUERY = defineQuery(`
+  *[_id == "homePage"][0]{
+    ...,
+    hero{
+      ...,
+      "video": video.asset->url,
+      poster${IMAGE_FIELDS}
+    }
+  }
+`);
 
 const DEFAULT_CONTACT_CTA = {
   title: "Have a question? We'd love to hear from you.",
@@ -247,8 +266,12 @@ const DEFAULT_TESTIMONIALS_SECTION = {
   showPlaceholderBadge: testimonials.placeholder as boolean,
 };
 
+/** Present only once a video file AND a poster (with usable dimensions) both exist — never a video with no fallback image. */
+export type HeroVideo = { url: string; poster: SanityImageData } | null;
+
 export type HomePage = {
   hero: typeof hero;
+  heroVideo: HeroVideo;
   mission: typeof mission;
   contactCta: typeof DEFAULT_CONTACT_CTA;
   testimonials: typeof DEFAULT_TESTIMONIALS_SECTION;
@@ -258,7 +281,9 @@ export type HomePage = {
  * Homepage hero, mission statement, closing contact CTA, and the Student
  * Stories section's heading/badge (the stories themselves come from
  * getTestimonials()) — the homePage singleton, merged over
- * lib/content.ts's defaults.
+ * lib/content.ts's defaults. `heroVideo` is handled separately from the
+ * field-by-field merge: it's a present-or-absent unit (video + poster
+ * together), not a value with a sensible partial fallback.
  */
 export async function getHomePage(): Promise<HomePage> {
   const doc = await sanityFetch<HomePageDoc | null>(
@@ -267,15 +292,24 @@ export async function getHomePage(): Promise<HomePage> {
     ["homePage"],
     null,
   );
-  return withDefaults(
-    {
-      hero,
-      mission,
-      contactCta: DEFAULT_CONTACT_CTA,
-      testimonials: DEFAULT_TESTIMONIALS_SECTION,
-    },
-    doc,
-  );
+
+  const heroVideo: HeroVideo =
+    doc?.hero?.video && doc.hero.poster?.dim && doc.hero.poster.alt
+      ? { url: doc.hero.video, poster: doc.hero.poster }
+      : null;
+
+  return {
+    ...withDefaults(
+      {
+        hero,
+        mission,
+        contactCta: DEFAULT_CONTACT_CTA,
+        testimonials: DEFAULT_TESTIMONIALS_SECTION,
+      },
+      doc,
+    ),
+    heroVideo,
+  };
 }
 
 const PAGE_QUERY = defineQuery(`*[_type == "page" && slug == $slug][0]`);

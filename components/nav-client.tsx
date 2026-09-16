@@ -22,14 +22,18 @@ type Props = {
   navLinks: NavLink[];
   orgName: string;
   ctaLabel: string;
+  /** Homepage has a background video — while unscrolled there, the nav floats over it with no background of its own, so its text needs to go light instead of the usual theme-adaptive colors. */
+  homeHasVideo: boolean;
 };
 
-export function NavClient({ navLinks, orgName, ctaLabel }: Props) {
+export function NavClient({ navLinks, orgName, ctaLabel, homeHasVideo }: Props) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   // Which top-level mobile item has its sublist expanded.
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+
+  const light = homeHasVideo && pathname === "/" && !scrolled && !open;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -68,7 +72,11 @@ export function NavClient({ navLinks, orgName, ctaLabel }: Props) {
           >
             ESF
           </span>
-          <span className="hidden font-display text-base leading-tight font-semibold sm:block">
+          <span
+            className={`hidden font-display text-base leading-tight font-semibold sm:block ${
+              light ? "text-white" : ""
+            }`}
+          >
             Evangelical Student
             <br />
             Fellowship
@@ -77,12 +85,12 @@ export function NavClient({ navLinks, orgName, ctaLabel }: Props) {
 
         <ul className="hidden items-center gap-1 lg:flex">
           {navLinks.map((link) => (
-            <DesktopItem key={link.href} link={link} pathname={pathname} />
+            <DesktopItem key={link.href} link={link} pathname={pathname} light={light} />
           ))}
         </ul>
 
         <div className="flex items-center gap-2">
-          <ThemeToggle />
+          <ThemeToggle light={light} />
           <Link
             href="/contact"
             className="hidden cursor-pointer rounded-full bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-on-primary shadow-md shadow-primary/20 outline-none transition-[filter,transform] duration-200 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-primary/50 lg:inline-block"
@@ -95,7 +103,11 @@ export function NavClient({ navLinks, orgName, ctaLabel }: Props) {
             aria-expanded={open}
             aria-controls="mobile-menu"
             aria-label={open ? "Close menu" : "Open menu"}
-            className="grid size-11 cursor-pointer place-items-center rounded-full border border-border bg-surface outline-none transition-colors duration-200 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary/50 lg:hidden"
+            className={`grid size-11 cursor-pointer place-items-center rounded-full border outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary/50 lg:hidden ${
+              light
+                ? "border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+                : "border-border bg-surface hover:bg-surface-2"
+            }`}
           >
             {open ? (
               <X aria-hidden className="size-5" />
@@ -194,7 +206,15 @@ export function NavClient({ navLinks, orgName, ctaLabel }: Props) {
   );
 }
 
-function DesktopItem({ link, pathname }: { link: NavLink; pathname: string }) {
+function DesktopItem({
+  link,
+  pathname,
+  light,
+}: {
+  link: NavLink;
+  pathname: string;
+  light: boolean;
+}) {
   const isActive = isActivePath(pathname, link.href);
 
   return (
@@ -204,16 +224,22 @@ function DesktopItem({ link, pathname }: { link: NavLink; pathname: string }) {
         aria-current={isActive ? "true" : undefined}
         aria-haspopup={link.children ? "true" : undefined}
         className={`relative flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-          isActive
-            ? "text-primary"
-            : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+          light
+            ? isActive
+              ? "text-white"
+              : "text-white/80 hover:bg-white/10 hover:text-white"
+            : isActive
+              ? "text-primary"
+              : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
         }`}
       >
         {isActive && (
           <motion.span
             layoutId="nav-pill"
             aria-hidden
-            className="absolute inset-0 -z-10 rounded-full bg-surface-2 ring-1 ring-primary/15"
+            className={`absolute inset-0 -z-10 rounded-full ring-1 ${
+              light ? "bg-white/15 ring-white/25" : "bg-surface-2 ring-primary/15"
+            }`}
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
           />
         )}

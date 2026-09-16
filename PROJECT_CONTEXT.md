@@ -119,11 +119,16 @@ app/
 └── layout.tsx                Root layout: fonts, ThemeProvider; generateMetadata() reads siteSettings.defaultSeo
 
 components/
-├── nav.tsx                    Async server wrapper: fetches CMS nav/settings, renders NavClient
-├── nav-client.tsx              "use client" — all interactive nav behavior; pure props, no data fetching
+├── nav.tsx                    Async server wrapper: fetches CMS nav/settings + whether the
+│                               homepage has a hero video, renders NavClient
+├── nav-client.tsx              "use client" — interactive nav behavior; also forces light/white
+│                               text while unscrolled on "/" when a hero video is set (see §15)
 ├── footer.tsx                 Async server component — reads getSiteSettings()/getNavigation()
-├── hero.tsx                    Async server wrapper: fetches getHomePage().hero, renders HeroClient
-├── hero-client.tsx              "use client" — hero motion/layout; pure props, no data fetching
+├── hero.tsx                    Async server wrapper: fetches getHomePage().hero/.heroVideo,
+│                               resolves the poster image URL, renders HeroClient
+├── hero-client.tsx              "use client" — hero motion/layout, and the optional
+│                               background <video> (muted/loop/autoplay, poster fallback,
+│                               skipped entirely for prefers-reduced-motion — see §15)
 ├── mission.tsx                 Async server component — reads getHomePage().mission
 ├── contact-cta.tsx             Async server component — reads getHomePage().contactCta
 ├── section.tsx                Shared section wrapper (title/subtitle/placeholder badge, h1|h2 toggle)
@@ -141,6 +146,11 @@ components/
 ├── testimonials.tsx             Async server wrapper: fetches getHomePage().testimonials + getTestimonials(), renders TestimonialsClient
 ├── testimonials-client.tsx      "use client" — carousel state/motion; pure props, no data fetching
 ├── {ministries,missions,history}-teaser.tsx   Async server components — read getPage()/getMinistries()/getMissionCountries() so teasers can't drift from their full page
+├── sanity-image.tsx             <SanityImage> — wraps next/image over an `imageWithAlt`
+│                               field (hotspot-aware URL, LQIP blur, required alt); not
+│                               used by any page yet (Phase 4 shipped the pipeline ahead
+│                               of the first content image — the hero poster is a plain
+│                               <video poster>/next/image src string, not this component)
 └── socials/theme-*  Self-explanatory, still content.ts-driven
 
 lib/
@@ -153,9 +163,13 @@ lib/
 │                               string becomes a lucide component)
 └── sanity/
     ├── client.ts               getSanityClient() — memoized, null when unconfigured
+    ├── image.ts                 urlFor() (@sanity/image-url, memoized like the client) +
+    │                           SanityImageData type — the shape a GROQ query must project
+    │                           for any imageWithAlt field (raw image + dim + lqip)
     ├── queries.ts              defineQuery GROQ + sanityFetch(); getSiteSettings(),
-    │                           getNavigation(), getHomePage(), getPage(slug, fallback),
-    │                           getMinistries(), getMissionCountries(), getTestimonials()
+    │                           getNavigation(), getHomePage() (now returns `heroVideo`
+    │                           too), getPage(slug, fallback), getMinistries(),
+    │                           getMissionCountries(), getTestimonials()
     └── defaults.ts             withDefaults(fallback, doc) — CMS-over-default merge
 
 sanity/
@@ -170,10 +184,14 @@ sanity/
 
 scripts/
 ├── seed-bulletins.ts           One-time: migrates 33 hand-sourced bulletins
-└── seed-content.ts             Seeds every CMS document (singletons, the six
-                                 pages, and the repeatable ministry/testimonial/
-                                 missionCountry documents) from lib/content.ts
-                                 (npm run seed:content — idempotent)
+├── seed-content.ts             Seeds every CMS document (singletons, the six
+│                               pages, and the repeatable ministry/testimonial/
+│                               missionCountry documents) from lib/content.ts
+│                               (npm run seed:content — idempotent)
+└── upload-hero-video.ts        Uploads a video + poster file and sets them on
+                                 homePage.hero (npm run upload:hero-video --
+                                 --video=... --poster=... [--alt=...]) — reusable,
+                                 not a one-time migration; rerun to replace the video
 ```
 
 **Key pattern:** bulletins and sermons share almost all UI/data logic
@@ -268,6 +286,8 @@ falls back to `lib/content.ts`'s `hero`/`mission`/`testimonials` consts
 | `contactCta.title`, `.subtitle`, `.cta` | string/text/`cta` | Closing homepage CTA (was hardcoded in `contact-cta.tsx` before Phase 2) |
 | `testimonials.title`, `.subtitle` | string/text | "Student Stories" section heading |
 | `testimonials.showPlaceholderBadge` | boolean | Real toggle as of Phase 3 (was hardcoded `true` before) |
+| `hero.video` | file (Phase 4) | Optional silent looping background video, mp4/webm, ≤15MB (`fileSizeValidator()` in `shared.ts`) — shows instead of the decorative `<ArchArt>` illustration when set |
+| `hero.poster` | `imageWithAlt` (Phase 4) | Required when `hero.video` is set (cross-field validation in the schema) — shown while the video loads and in place of it for `prefers-reduced-motion` visitors |
 
 ### `page` (six documents, `_id: "page.<slug>"`)
 One type for every simple content page — `ministries`, `missions`,
@@ -474,6 +494,16 @@ industry workaround:
   `.replace(/</g, "\\u003c")` before being placed in
   `dangerouslySetInnerHTML` — otherwise a value containing that sequence
   could break out of the script tag. Fixed 2026-09-15, Phase 1.
+- **Hero background video is muted and capped.** `homePage.hero.video`
+  reuses `fileTypeValidator()` (mp4/webm only, real mimeType/extension
+  checked server-side, same idiom as bulletin/sermon files) plus a new
+  `fileSizeValidator()` in `shared.ts` hard-capping it at 15MB in Studio —
+  an autoplaying video has no user gesture to gate it behind, so an
+  admin uploading something huge would otherwise silently tank every
+  visitor's load time with no warning beyond an easily-skipped
+  description string. The `<video>` element itself is always rendered
+  `muted` (autoplay without it is blocked by every major browser anyway,
+  and unmuted autoplay would be a poor experience even where allowed).
 
 ---
 
@@ -626,18 +656,19 @@ dead-zone fix + visible hover/focus states, Playwright suite.
 bulletins/sermons), reverted to public same day — content is back. See §16
 for what's needed if it goes private again.
 
-**In progress / next:** whole-site CMS migration — Phases 0 through 3 of 7
+**In progress / next:** whole-site CMS migration — Phases 0 through 4 of 7
 landed 2026-09-15 (infra; site chrome; page copy + SEO; ministries/mission
-countries/testimonials promoted to their own repeatable documents with
-real placeholder-badge toggles). All seeded and verified against the real
-project. Next up is Phase 4 (images: `@sanity/image-url`,
-`<SanityImage>`, hero/ministry images, a `gallery` document). Also:
-connect `esfworld.us`, admin to fill in real Ministries/Missions copy and
-start publishing Sermons.
+countries/testimonials promoted to documents; image pipeline +
+CMS-managed hero background video, live on production data). All seeded
+and verified against the real project. Next up is Phase 5 (rich text +
+hardened Portable Text serializer) and, on request, a `gallery` document
+and per-ministry images now that the image pipeline exists. Also: connect
+`esfworld.us`, admin to fill in real Ministries/Missions copy and start
+publishing Sermons.
 
-**Planned (not started):** image gallery, hero background video (both via
-the CMS migration's Phase 4/5), video embeds explicitly deferred/out of
-scope per the approved plan.
+**Planned (not started):** image gallery, per-ministry images (pipeline
+ready, no content type asked for yet), rich text (Phase 5), video embeds
+explicitly deferred/out of scope per the approved plan.
 
 ---
 
@@ -661,6 +692,66 @@ Student**s** Fellowship," but the real legal name used everywhere else in
 the codebase (`lib/content.ts`, `README.md`, page titles, meta
 descriptions) is "Evangelical Student Fellowship" with no "s"; the test
 was wrong, not the content. All 31 Playwright tests now pass.
+
+### 2026-09-15 — CMS migration Phase 4 (images + hero background video)
+The image pipeline landed, and — at the user's explicit request, ahead of
+the plan's original Phase 5 slot for it — the homepage hero now has a
+real, CMS-managed background video, live on the production Sanity
+project with the user's own footage.
+
+- Added `lib/sanity/image.ts`: `urlFor()` (via `@sanity/image-url`'s
+  `createImageUrlBuilder` — the plain default export is deprecated in the
+  installed version) and the `SanityImageData` type every GROQ image
+  projection must satisfy. Added `components/sanity-image.tsx`
+  (`<SanityImage>`), a next/image wrapper handling hotspot/crop, LQIP blur
+  placeholder, and a required `alt` with no silent `?? ""` fallback. Not
+  yet consumed by any page — the pipeline shipped ahead of the first
+  content image, since the hero poster (the one image in this phase) is
+  rendered as a plain URL string (`<video poster>` / `next/image src`),
+  not through this component.
+- `homePage.hero` gained `video` (file, mp4/webm, `fileTypeValidator()` +
+  a new `fileSizeValidator()` in `shared.ts` hard-capping it at 15MB —
+  Sanity's file/image types have no built-in size rule, and an
+  autoplaying video has no user gesture to gate a huge upload behind) and
+  `poster` (`imageWithAlt`, cross-field-required whenever `video` is set).
+  `getHomePage()` now also returns `heroVideo: {url, poster} | null`,
+  handled separately from the field-by-field `withDefaults()` merge since
+  it's a present-or-absent unit, not a value with a partial fallback.
+- `components/hero-client.tsx`: when a video is set, it renders full-bleed
+  behind the whole hero (`muted loop playsInline autoPlay`, real
+  `poster`), and the decorative `<ArchArt>` illustration + ambient blobs
+  are skipped. `prefers-reduced-motion` visitors get the poster image via
+  `next/image` instead of the `<video>` element — the file is never
+  requested, not just paused. Because a video's own brightness can't be
+  predicted, its text overlay forces light/white colors instead of the
+  usual theme-adaptive ones (that adaptive styling still applies whenever
+  there's no video).
+- **Follow-on fix, not originally in scope:** the fixed nav has no
+  background of its own while unscrolled, so it was unreadable over the
+  new dark video at the top of the homepage. `components/nav.tsx` now
+  also calls `getHomePage()` to check for a video and passes
+  `homeHasVideo` to `NavClient`, which forces the same light-text
+  treatment (wordmark, links, theme toggle, mobile menu button) only
+  while unscrolled on `/` with a video present — reverts to normal once
+  scrolled (the nav gets a real background then) or on any other route.
+  `components/theme-toggle.tsx` gained a `light` prop for this.
+- Added `scripts/upload-hero-video.ts` (`npm run upload:hero-video --
+  --video=... --poster=... [--alt=...]`) — uploads a video + poster to
+  Sanity and sets them on `homePage.hero`. Reusable, not a one-time
+  migration script; rerun it to replace the video later.
+- The user's own footage (a 140MB, 1080p, 60s clip) was compressed
+  locally with `ffmpeg-static` (installed to a scratch npm project
+  outside the repo, not added as a dependency) to 1280×720, muted,
+  ~430kbps H.264 — **3.26MB**, comfortably under the new 15MB cap — plus
+  a JPEG poster frame extracted from the same clip. Uploaded via the new
+  script and verified live.
+- Verified: typecheck/lint/build clean with the real project and with
+  `NEXT_PUBLIC_SANITY_PROJECT_ID` unset. All 31 Playwright tests pass. The
+  video's `readyState`/`currentTime`/dimensions were confirmed correct via
+  direct DOM inspection — the Browser pane's screenshot tool does not
+  composite live `<video>` frames (confirmed independently: a screenshot
+  taken while the video was paused on a specific frame was identically
+  black), a tooling limitation, not a rendering bug.
 
 ### 2026-09-15 — CMS migration Phase 3 (ministries, missions, testimonials become documents)
 Ministries, mission countries, and student stories are now their own
