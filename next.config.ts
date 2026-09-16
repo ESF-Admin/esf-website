@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // No point advertising the framework to every request — pure
+  // reconnaissance value for an attacker, zero benefit to a visitor.
+  poweredByHeader: false,
+
   // Only `swr` needs externalizing: sanity's validationUtils imports it, and
   // swr has no default export under the "react-server" condition, which
   // crashes the RSC bundler's static analysis. Externalizing `sanity` itself

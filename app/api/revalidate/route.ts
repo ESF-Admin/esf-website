@@ -26,7 +26,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ revalidated: true, type: body._type, now: Date.now() });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ message }, { status: 500 });
+    // Log the real error server-side only — the response body is public
+    // (no auth required to see it, since a malformed/unsigned request
+    // reaches this catch before signature verification can run), so it
+    // must never carry internal error details (stack traces, library
+    // internals, file paths).
+    console.error("[revalidate] webhook error", err);
+    return NextResponse.json({ message: "Internal error" }, { status: 500 });
   }
 }
