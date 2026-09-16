@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getHomePage } from "@/lib/sanity/queries";
+import { safeHref } from "@/lib/href";
 import { Reveal } from "./reveal";
 
 /** Closing homepage CTA — the full contact form lives at /contact. */
@@ -21,7 +22,7 @@ export async function ContactCta() {
             {contactCta.subtitle}
           </p>
           <Link
-            href={contactCta.cta.href}
+            href={safeHref(contactCta.cta.href)}
             className="group mt-8 inline-flex cursor-pointer items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-7 py-3.5 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110"
           >
             {contactCta.cta.label}

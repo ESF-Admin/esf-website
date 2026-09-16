@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import Link from "next/link";
 import type { NavLink } from "@/lib/content";
+import { safeHref } from "@/lib/href";
 import { ThemeToggle } from "./theme-toggle";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -135,7 +136,7 @@ export function NavClient({ navLinks, orgName, ctaLabel, homeHasVideo }: Props) 
                   <li key={link.href}>
                     <div className="flex items-center">
                       <Link
-                        href={link.href}
+                        href={safeHref(link.href)}
                         onClick={() => setOpen(false)}
                         aria-current={
                           isActivePath(pathname, link.href) ? "true" : undefined
@@ -174,7 +175,7 @@ export function NavClient({ navLinks, orgName, ctaLabel, homeHasVideo }: Props) 
                             {link.children.map((child) => (
                               <li key={child.label}>
                                 <Link
-                                  href={child.href}
+                                  href={safeHref(child.href)}
                                   onClick={() => setOpen(false)}
                                   className="block rounded-lg px-4 py-2.5 text-sm text-muted-foreground hover:bg-surface-2 hover:text-foreground"
                                 >
@@ -220,7 +221,7 @@ function DesktopItem({
   return (
     <li className="group relative">
       <Link
-        href={link.href}
+        href={safeHref(link.href)}
         aria-current={isActive ? "true" : undefined}
         aria-haspopup={link.children ? "true" : undefined}
         className={`relative flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
@@ -260,7 +261,7 @@ function DesktopItem({
             {link.children.map((child) => (
               <li key={child.label}>
                 <Link
-                  href={child.href}
+                  href={safeHref(child.href)}
                   className="block rounded-lg px-3.5 py-2 text-sm whitespace-nowrap text-muted-foreground transition-colors duration-150 hover:bg-accent-soft hover:text-foreground"
                 >
                   {child.label}

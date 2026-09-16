@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowRight, MapPin } from "lucide-react";
 import { ArchArt } from "./arch-art";
+import { safeHref } from "@/lib/href";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -120,7 +121,7 @@ export function HeroClient({ eyebrow, title, body, primaryCta, secondaryCta, vid
 
           <motion.div variants={child} className="mt-9 flex flex-wrap gap-3">
             <a
-              href={primaryCta.href}
+              href={safeHref(primaryCta.href)}
               className="group inline-flex cursor-pointer items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-6 py-3.5 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110"
             >
               {primaryCta.label}
@@ -130,7 +131,7 @@ export function HeroClient({ eyebrow, title, body, primaryCta, secondaryCta, vid
               />
             </a>
             <a
-              href={secondaryCta.href}
+              href={safeHref(secondaryCta.href)}
               className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-6 py-3.5 text-base font-semibold transition-colors duration-200 ${
                 video
                   ? "border-white/40 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"

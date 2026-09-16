@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import { getSiteSettings } from "@/lib/sanity/queries";
+import { safeHref } from "@/lib/href";
 import { Reveal } from "./reveal";
 import { GetDirectionsButton } from "./get-directions-button";
 
@@ -37,7 +38,7 @@ export async function SundayService() {
           </p>
 
           <a
-            href={org.mapUrl}
+            href={safeHref(org.mapUrl)}
             target="_blank"
             rel="noreferrer"
             className="mt-6 inline-flex max-w-xs cursor-pointer items-start gap-2.5 text-left text-lg leading-snug opacity-90 transition-opacity duration-200 hover:opacity-100 sm:max-w-none"

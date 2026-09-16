@@ -1,5 +1,6 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import { getSiteSettings, getNavigation } from "@/lib/sanity/queries";
+import { safeHref } from "@/lib/href";
 import { Socials } from "./socials";
 
 export async function Footer() {
@@ -38,7 +39,7 @@ export async function Footer() {
             {navLinks.map((link) => (
               <li key={link.href}>
                 <a
-                  href={link.href}
+                  href={safeHref(link.href)}
                   className="cursor-pointer text-muted-foreground transition-colors duration-200 hover:text-foreground"
                 >
                   {link.label}
@@ -55,7 +56,7 @@ export async function Footer() {
           <ul className="mt-5 space-y-3">
             <li>
               <a
-                href={org.phoneHref}
+                href={safeHref(org.phoneHref)}
                 className="flex items-start gap-2.5 text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
                 <Phone aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />
@@ -64,7 +65,7 @@ export async function Footer() {
             </li>
             <li>
               <a
-                href={org.emailHref}
+                href={safeHref(org.emailHref)}
                 className="flex items-start gap-2.5 break-all text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
                 <Mail aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />
@@ -73,7 +74,7 @@ export async function Footer() {
             </li>
             <li>
               <a
-                href={org.mapUrl}
+                href={safeHref(org.mapUrl)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-start gap-2.5 text-muted-foreground transition-colors duration-200 hover:text-foreground"

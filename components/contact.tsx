@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { CheckCircle2, Mail, MapPin, Phone } from "lucide-react";
 import { org } from "@/lib/content";
+import { safeHref } from "@/lib/href";
 import { Section } from "./section";
 import { Socials } from "./socials";
 
@@ -202,7 +203,7 @@ export function ContactSection({ title, subtitle }: Props) {
             <ul className="mt-5 space-y-4">
               <li>
                 <a
-                  href={org.phoneHref}
+                  href={safeHref(org.phoneHref)}
                   className="flex items-center gap-3 text-muted-foreground transition-colors duration-200 hover:text-foreground"
                 >
                   <Phone aria-hidden className="size-5 shrink-0 text-accent" />
@@ -211,7 +212,7 @@ export function ContactSection({ title, subtitle }: Props) {
               </li>
               <li>
                 <a
-                  href={org.emailHref}
+                  href={safeHref(org.emailHref)}
                   className="flex items-center gap-3 text-muted-foreground transition-colors duration-200 hover:text-foreground"
                 >
                   <Mail aria-hidden className="size-5 shrink-0 text-accent" />
@@ -222,7 +223,7 @@ export function ContactSection({ title, subtitle }: Props) {
               </li>
               <li>
                 <a
-                  href={org.mapUrl}
+                  href={safeHref(org.mapUrl)}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-start gap-3 text-muted-foreground transition-colors duration-200 hover:text-foreground"
