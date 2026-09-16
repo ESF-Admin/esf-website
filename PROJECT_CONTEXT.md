@@ -547,6 +547,37 @@ industry workaround:
   description string. The `<video>` element itself is always rendered
   `muted` (autoplay without it is blocked by every major browser anyway,
   and unmuted autoplay would be a poor experience even where allowed).
+- **No internal error details ever reach a client response.**
+  `/api/revalidate`'s catch-all used to return the raw `err.message` on a
+  500 — reachable by an unauthenticated request, since a malformed body
+  can throw before signature verification runs. Fixed 2026-09-16: the
+  real error is logged server-side only (`console.error`), the response
+  carries a generic `"Internal error"` message. `/api/contact` already
+  followed this pattern (see §8) — this brought the other route in line.
+- **`X-Powered-By: Next.js` is disabled** (`poweredByHeader: false` in
+  `next.config.ts`, added 2026-09-16) — pure framework fingerprinting for
+  free, no benefit to a visitor. Verified removed via `curl -I` on both a
+  normal route and `/studio` (the header is a Next.js global, not tied to
+  the CSP/security headers this app sets itself, which deliberately skip
+  `/studio` — so it needed its own check there).
+- **Dependencies are kept current against known CVEs, not just added
+  freely.** `next` was upgraded 16.3.1 → 16.3.5 (2026-09-16) to patch two
+  critical CVEs from Next.js's August 2026 security release
+  (`GHSA-p293-qw3h-jr36`, a Windows-hosted-server RCE requiring both
+  Pages and App Router without Cache Components; `GHSA-2xp9-vwfh-vxw4`,
+  an AVIF image-optimization RCE requiring `image/avif` opted into
+  `images.formats`). Neither precondition is met here — this app is App
+  Router only, `next.config.ts` never enables AVIF, and production runs
+  on Vercel's Linux infra — but upgrading to the patched version is the
+  correct move regardless of whether current exposure is zero, not a
+  judgment call to skip. `npm audit`: 17 vulnerabilities → 15, critical
+  severity cleared. The remaining 13 moderate + 2 high findings all live
+  inside `@vercel/frameworks`'s transitive deps (`js-yaml`, `smol-toml`,
+  `uuid`) — Sanity's own CLI/build tooling, never reachable from the
+  deployed app's request path, and DoS-class or prototype-pollution in a
+  build-time-only tool. The only available fix (`npm audit fix --force`)
+  would downgrade `sanity` to `5.14.1`, a regression against the v6 APIs
+  this codebase is built on — left as-is deliberately, not silently.
 
 ---
 
@@ -738,6 +769,35 @@ Student**s** Fellowship," but the real legal name used everywhere else in
 the codebase (`lib/content.ts`, `README.md`, page titles, meta
 descriptions) is "Evangelical Student Fellowship" with no "s"; the test
 was wrong, not the content. All 31 Playwright tests now pass.
+
+### 2026-09-16 — Follow-up security/exposure sweep after the push
+Continued straight from the pre-push review below: fixed the one item it
+had flagged but left open (the `/api/revalidate` error leak), then ran a
+broader pass for anything else exposed unnecessarily or below coding
+standards.
+
+- Fixed `/api/revalidate`'s error-detail leak (see §13) and disabled
+  `X-Powered-By` (see §13).
+- **Found and fixed something the prior review hadn't looked for:**
+  `npm audit` showed a critical Next.js RCE (two, actually — see §13).
+  Upgraded to the patched `16.3.5` even though this app's configuration
+  doesn't meet either CVE's trigger conditions.
+- Ran the `code-review` skill (high effort, 8 finder angles) against the
+  revalidate-fix + next-upgrade diff: no findings.
+- Swept for other unnecessary public exposure and found nothing further
+  needing a fix: no secrets committed (checked git history, not just the
+  working tree), no hardcoded API keys/tokens anywhere in source, no CORS
+  headers on the API routes (so the default same-origin restriction
+  applies — nothing opted into cross-origin access), no
+  `productionBrowserSourceMaps` (source maps aren't shipped to
+  production), no stray debug/test routes under `app/`, no
+  postinstall/prepare scripts, `robots.ts`/`sitemap.ts` already correctly
+  exclude `/studio`. Also checked general coding-standard hygiene: zero
+  `any` types, zero `eslint-disable` comments, zero `TODO`/`FIXME`
+  markers anywhere in the app source.
+- Verified: typecheck/lint/build clean with the real project and with
+  `NEXT_PUBLIC_SANITY_PROJECT_ID` unset. All 31 Playwright tests pass.
+  Pushed to `origin/main` (`0ac1f8c..561ca37`).
 
 ### 2026-09-16 — Pre-push security review, mobile verification, and push
 With all 7 CMS migration phases committed locally, ran a full security
