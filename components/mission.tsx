@@ -1,6 +1,18 @@
+import type { ReactNode } from "react";
 import { Quote } from "lucide-react";
 import { getHomePage } from "@/lib/sanity/queries";
 import { Reveal } from "./reveal";
+import { RichText } from "./rich-text";
+
+const statementComponents = {
+  block: {
+    normal: ({ children }: { children?: ReactNode }) => (
+      <p className="mt-6 text-2xl leading-snug font-medium text-balance sm:text-3xl md:text-[2.1rem] md:leading-[1.3]">
+        {children}
+      </p>
+    ),
+  },
+};
 
 export async function Mission() {
   const { mission } = await getHomePage();
@@ -28,9 +40,7 @@ export async function Mission() {
           >
             {mission.title}
           </h2>
-          <p className="mt-6 text-2xl leading-snug font-medium text-balance sm:text-3xl md:text-[2.1rem] md:leading-[1.3]">
-            {mission.statement}
-          </p>
+          <RichText value={mission.statement} components={statementComponents} />
         </Reveal>
       </div>
     </section>

@@ -95,9 +95,9 @@ export const homePage = defineType({
         defineField({
           name: "statement",
           title: "Statement",
-          type: "text",
-          rows: 4,
-          validation: (rule) => rule.required().max(500),
+          type: "richText",
+          description: "Keep it short — this renders as large, centered display text.",
+          validation: (rule) => rule.required(),
         }),
       ],
     }),

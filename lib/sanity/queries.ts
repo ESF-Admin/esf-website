@@ -1,6 +1,8 @@
 import { defineQuery } from "next-sanity";
+import type { PortableTextBlock } from "@portabletext/react";
 import { getSanityClient } from "./client";
 import { withDefaults } from "./defaults";
+import { plainTextToBlocks } from "./portable-text";
 import type { SanityImageData } from "./image";
 import {
   org,
@@ -231,7 +233,7 @@ type HomePageDoc = {
     video?: string;
     poster?: SanityImageData | null;
   };
-  mission?: { title?: string; statement?: string };
+  mission?: { title?: string; statement?: PortableTextBlock[] };
   contactCta?: { title?: string; subtitle?: string; cta?: CtaDoc };
   testimonials?: { title?: string; subtitle?: string; showPlaceholderBadge?: boolean };
 };
@@ -269,10 +271,15 @@ const DEFAULT_TESTIMONIALS_SECTION = {
 /** Present only once a video file AND a poster (with usable dimensions) both exist — never a video with no fallback image. */
 export type HeroVideo = { url: string; poster: SanityImageData } | null;
 
+const DEFAULT_MISSION = {
+  title: mission.title,
+  statement: plainTextToBlocks(mission.statement),
+};
+
 export type HomePage = {
   hero: typeof hero;
   heroVideo: HeroVideo;
-  mission: typeof mission;
+  mission: typeof DEFAULT_MISSION;
   contactCta: typeof DEFAULT_CONTACT_CTA;
   testimonials: typeof DEFAULT_TESTIMONIALS_SECTION;
 };
@@ -302,7 +309,7 @@ export async function getHomePage(): Promise<HomePage> {
     ...withDefaults(
       {
         hero,
-        mission,
+        mission: DEFAULT_MISSION,
         contactCta: DEFAULT_CONTACT_CTA,
         testimonials: DEFAULT_TESTIMONIALS_SECTION,
       },

@@ -11,6 +11,7 @@ import { Testimonials } from "@/components/testimonials";
 import { ContactCta } from "@/components/contact-cta";
 import { Footer } from "@/components/footer";
 import { getSiteSettings, getHomePage } from "@/lib/sanity/queries";
+import { blocksToPlainText } from "@/lib/sanity/portable-text";
 
 export default async function Home() {
   const [{ org }, { mission }] = await Promise.all([
@@ -25,7 +26,9 @@ export default async function Home() {
     alternateName: org.shortName,
     foundingDate: "1976",
     foundingLocation: "Seoul, Korea",
-    description: mission.statement,
+    // mission.statement is rich text (Phase 5) — schema.org's `description`
+    // must be a plain string, not a dumped Portable Text block array.
+    description: blocksToPlainText(mission.statement),
     email: org.email,
     telephone: org.phone,
     address: org.address,

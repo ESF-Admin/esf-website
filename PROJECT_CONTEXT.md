@@ -51,15 +51,18 @@ routes: `app/api/revalidate/route.ts` (Sanity webhook → cache purge) and
 `app/api/contact/route.ts` (contact form → Resend email, no DB storage).
 
 ### CMS / Data
-- **Sanity** (`sanity`, `next-sanity`, `@sanity/vision`, `@sanity/image-url`) —
-  schema-as-code, no ORM. Studio embedded in this app at `/studio`
-  (`app/studio/[[...tool]]/`, config in `sanity.config.ts`).
+- **Sanity** (`sanity`, `next-sanity`, `@sanity/vision`, `@sanity/image-url`,
+  `@portabletext/react`) — schema-as-code, no ORM. Studio embedded in this
+  app at `/studio` (`app/studio/[[...tool]]/`, config in `sanity.config.ts`).
 - Document types: `bulletin`, `sermon`, `siteSettings` (singleton),
   `navigation` (singleton), `homePage` (singleton), `page` (six documents,
   one per slug: ministries/missions/history/contact/bulletins/sermons),
   `ministry`, `missionCountry`, `testimonial` (repeatable) — see §6.
-  **Whole-site CMS migration in progress** (Phase 0 + 1 + 2 + 3 landed
-  2026-09-15) — see §15 "CMS content migration" and §17/§18.
+  **Whole-site CMS migration complete** — all 7 planned phases landed
+  2026-09-15 (infra, site chrome, page copy + SEO, ministries/missions/
+  testimonials as documents, images + hero video, rich text). See §15
+  "CMS content migration" and §17/§18 for what's left as optional
+  follow-on work.
 - Queries use `defineQuery` (from `next-sanity`) + Sanity TypeGen: run
   `npm run sanity:typegen` after any schema change to regenerate the
   committed `sanity.types.ts` (extracts `schema.json` first, gitignored).
@@ -129,7 +132,9 @@ components/
 ├── hero-client.tsx              "use client" — hero motion/layout, and the optional
 │                               background <video> (muted/loop/autoplay, poster fallback,
 │                               skipped entirely for prefers-reduced-motion — see §15)
-├── mission.tsx                 Async server component — reads getHomePage().mission
+├── mission.tsx                 Async server component — reads getHomePage().mission,
+│                               renders the (Phase 5) rich-text statement via <RichText>
+│                               with a custom "normal" block style for its display type
 ├── contact-cta.tsx             Async server component — reads getHomePage().contactCta
 ├── section.tsx                Shared section wrapper (title/subtitle/placeholder badge, h1|h2 toggle)
 ├── document-row.tsx           One bulletin/sermon row (shared by teaser + archive)
@@ -151,6 +156,12 @@ components/
 │                               used by any page yet (Phase 4 shipped the pipeline ahead
 │                               of the first content image — the hero poster is a plain
 │                               <video poster>/next/image src string, not this component)
+├── rich-text.tsx                <RichText> (Phase 5) — @portabletext/react wrapper. Its
+│                               link mark ALWAYS re-validates href against the same
+│                               allowlist pattern as the schema (duplicated deliberately,
+│                               not imported — the schema check never runs against a
+│                               document written via the API/Vision) and cannot be
+│                               overridden by a caller's `components` prop — see §13
 └── socials/theme-*  Self-explanatory, still content.ts-driven
 
 lib/
@@ -162,6 +173,10 @@ lib/
 │                               schema) + iconFor() (the only place a `ministry.icon`
 │                               string becomes a lucide component)
 └── sanity/
+    ├── portable-text.ts         plainTextToBlocks() / blocksToPlainText() — converts
+    │                           between a plain string and a single-block Portable Text
+    │                           array, for building a richText field's plain-string
+    │                           fallback and for the few places (JSON-LD) that need text
     ├── client.ts               getSanityClient() — memoized, null when unconfigured
     ├── image.ts                 urlFor() (@sanity/image-url, memoized like the client) +
     │                           SanityImageData type — the shape a GROQ query must project
@@ -282,7 +297,8 @@ falls back to `lib/content.ts`'s `hero`/`mission`/`testimonials` consts
 |---|---|---|
 | `hero.eyebrow`, `.title`, `.body` | string/text | Headline's last word is highlighted client-side |
 | `hero.primaryCta`, `.secondaryCta` | `cta` object | Label + href (href-allowlisted) |
-| `mission.title`, `.statement` | string/text | The homepage's mission-statement band |
+| `mission.title` | string | Small label above the statement |
+| `mission.statement` | `richText` (Phase 5, was plain `text`) | Rendered via `<RichText>`; falls back to `lib/content.ts`'s plain string wrapped in a single block by `plainTextToBlocks()` |
 | `contactCta.title`, `.subtitle`, `.cta` | string/text/`cta` | Closing homepage CTA (was hardcoded in `contact-cta.tsx` before Phase 2) |
 | `testimonials.title`, `.subtitle` | string/text | "Student Stories" section heading |
 | `testimonials.showPlaceholderBadge` | boolean | Real toggle as of Phase 3 (was hardcoded `true` before) |
@@ -486,14 +502,35 @@ industry workaround:
   `hrefField()`'s validation (`^(https?://|mailto:|tel:|/|#)`), which
   blocks `javascript:` at the schema level in Studio. That check does
   **not** run against a document written directly via the API or Vision,
-  so once rich text ships (a later phase) its render-side serializer must
-  re-check the same pattern, not just trust the schema.
+  so `components/rich-text.tsx`'s render-side link mark re-checks the
+  same pattern (Phase 5) and cannot be overridden by a caller's
+  `components` prop. **Verified live, not just by code review:** a link
+  with `href: "javascript:alert(document.cookie)"` was patched directly
+  onto the production `homePage.mission.statement` via the API (bypassing
+  Studio entirely), then the site was built and the rendered HTML
+  inspected — the text rendered as a plain, non-clickable string, no
+  `<a>` tag was emitted. The test document was reverted immediately after
+  (see `git log` for that day if this is ever repeated — no test/revert
+  scripts were kept in the repo).
+- **Nothing that originates in Sanity may reach `dangerouslySetInnerHTML`.**
+  The only use in the codebase (`app/page.tsx`'s JSON-LD `<script>`) passes
+  through `JSON.stringify()` + a `<` escape (see below) — never raw
+  CMS markup. Portable Text is rendered exclusively through `<RichText>`
+  (`@portabletext/react`), never through a manual HTML string.
 - **JSON-LD escaping** (`app/page.tsx`): `JSON.stringify()` does not escape
   `</script>`. Now that the JSON-LD payload includes CMS-sourced `org`
   fields (via `getSiteSettings()`), the output is passed through
   `.replace(/</g, "\\u003c")` before being placed in
   `dangerouslySetInnerHTML` — otherwise a value containing that sequence
-  could break out of the script tag. Fixed 2026-09-15, Phase 1.
+  could break out of the script tag. Fixed 2026-09-15, Phase 1. **Phase 5
+  regression, caught and fixed same day:** converting `mission.statement`
+  to rich text meant the JSON-LD `description` field briefly received the
+  raw Portable Text block array instead of a string — `JSON.stringify`
+  happily dumped it (including, during the security test above, the
+  injected `javascript:` href — inert there since it's inline JSON text,
+  never interpreted as a URL, but still not the intended output). Fixed
+  by routing it through the new `blocksToPlainText()` helper
+  (`lib/sanity/portable-text.ts`).
 - **Hero background video is muted and capped.** `homePage.hero.video`
   reuses `fileTypeValidator()` (mp4/webm only, real mimeType/extension
   checked server-side, same idiom as bulletin/sermon files) plus a new
@@ -656,19 +693,22 @@ dead-zone fix + visible hover/focus states, Playwright suite.
 bulletins/sermons), reverted to public same day — content is back. See §16
 for what's needed if it goes private again.
 
-**In progress / next:** whole-site CMS migration — Phases 0 through 4 of 7
-landed 2026-09-15 (infra; site chrome; page copy + SEO; ministries/mission
-countries/testimonials promoted to documents; image pipeline +
-CMS-managed hero background video, live on production data). All seeded
-and verified against the real project. Next up is Phase 5 (rich text +
-hardened Portable Text serializer) and, on request, a `gallery` document
-and per-ministry images now that the image pipeline exists. Also: connect
-`esfworld.us`, admin to fill in real Ministries/Missions copy and start
-publishing Sermons.
+**In progress / next:** whole-site CMS migration — all 7 planned phases
+now landed as of 2026-09-15 (infra; site chrome; page copy + SEO;
+ministries/mission countries/testimonials promoted to documents; image
+pipeline + CMS-managed hero background video; rich text with a
+security-tested hardened link serializer). All seeded and verified
+against the real project. Nothing left from the original plan except
+on-request follow-ons: a `gallery` document and per-ministry images (the
+image pipeline is ready, no content type asked for yet), and wiring
+`navItem.childSource` so nav dropdowns can auto-generate from
+`ministry`/`missionCountry` documents (currently still manual — see §16).
+Also: connect `esfworld.us`, admin to fill in real Ministries/Missions
+copy and start publishing Sermons.
 
-**Planned (not started):** image gallery, per-ministry images (pipeline
-ready, no content type asked for yet), rich text (Phase 5), video embeds
-explicitly deferred/out of scope per the approved plan.
+**Planned (not started):** image gallery, per-ministry images, nav
+auto-generated dropdowns, video embeds (explicitly out of scope per the
+approved plan — long-form video was never part of this migration).
 
 ---
 
@@ -692,6 +732,59 @@ Student**s** Fellowship," but the real legal name used everywhere else in
 the codebase (`lib/content.ts`, `README.md`, page titles, meta
 descriptions) is "Evangelical Student Fellowship" with no "s"; the test
 was wrong, not the content. All 31 Playwright tests now pass.
+
+### 2026-09-15 — CMS migration Phase 5 (rich text) — final planned phase
+`homePage.mission.statement` changed from plain `text` to `richText`, and
+`components/rich-text.tsx` shipped as the one hardened way any Portable
+Text value gets rendered anywhere in the app. This closes out all 7
+phases of the original CMS migration plan.
+
+- Added `@portabletext/react` as an explicit dependency (was already
+  transitive via `sanity`).
+- `components/rich-text.tsx`'s `<RichText>` merges a caller's own
+  block/list style components (e.g. `mission.tsx` supplies its large
+  centered "normal" paragraph style) underneath a hardened `link` mark
+  that always wins the merge — re-validating `href` against the same
+  allowlist pattern the schema uses (`HREF_RE`, deliberately duplicated
+  rather than imported, since the schema check doesn't run against a
+  document written via the API/Vision).
+- Added `lib/sanity/portable-text.ts`: `plainTextToBlocks()` (wraps a
+  plain string into one block, used to build `richText` fields' fallback
+  defaults so `lib/content.ts` can stay plain strings) and
+  `blocksToPlainText()` (the inverse, for the few places that need text).
+- **Migrated the live document, not just the schema:** the production
+  `homePage.mission.statement` was still a plain string under the old
+  schema. `scripts/migrate-mission-statement.ts` (one-time, idempotent)
+  converts it to the equivalent single-block rich text — run before
+  building against the real project, since a static-generation build
+  would otherwise try to render a raw string through `<PortableText>`.
+  `scripts/seed-content.ts`'s homePage seed updated the same way for a
+  from-scratch project.
+- **Security-tested live, not just reviewed:** patched a link with
+  `href: "javascript:alert(document.cookie)"` directly onto the
+  production document via the API (bypassing Studio validation
+  entirely), rebuilt, and inspected the rendered HTML — the text came
+  through as a plain, non-clickable string with no `<a>` tag. Reverted
+  the test document immediately after; no test-injection script was kept
+  in the repo. See §13.
+- **Caught and fixed a same-day regression from this exact change:**
+  `app/page.tsx`'s JSON-LD `description` still read `mission.statement`
+  directly, which now dumped the raw Portable Text block array into the
+  JSON-LD payload instead of a string (schema.org requires a plain
+  string). Surfaced by the security test above — the injected
+  `javascript:` string showed up in the JSON-LD blob (harmless there,
+  since it's inert JSON text never interpreted as a URL, but a genuine
+  correctness bug regardless). Fixed by routing it through
+  `blocksToPlainText()`.
+- Verified: typecheck/lint/build clean with the real project (after
+  running the migration) and with `NEXT_PUBLIC_SANITY_PROJECT_ID` unset.
+  All 31 Playwright tests pass. One transient `[@portabletext/react]
+  Unknown block type "undefined"` build warning appeared on the very
+  first build immediately after the live migration — attributed to
+  Sanity CDN cache propagation lag (`useCdn: true`) serving a
+  split-second-stale response mid-migration; a second build seconds
+  later was clean, and the actual served HTML was correct in both cases
+  (confirmed via direct HTML inspection, not just the build log).
 
 ### 2026-09-15 — CMS migration Phase 4 (images + hero background video)
 The image pipeline landed, and — at the user's explicit request, ahead of

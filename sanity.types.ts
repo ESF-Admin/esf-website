@@ -175,7 +175,7 @@ export type HomePage = {
   };
   mission?: {
     title: string;
-    statement: string;
+    statement: RichText;
   };
   contactCta?: {
     title: string;
@@ -500,7 +500,7 @@ export type SITE_SETTINGS_QUERY_RESULT =
       };
       mission?: {
         title: string;
-        statement: string;
+        statement: RichText;
       };
       contactCta?: {
         title: string;
@@ -749,7 +749,7 @@ export type HOME_PAGE_QUERY_RESULT =
       } | null;
       mission?: {
         title: string;
-        statement: string;
+        statement: RichText;
       };
       contactCta?: {
         title: string;

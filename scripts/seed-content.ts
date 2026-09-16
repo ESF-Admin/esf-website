@@ -33,6 +33,18 @@ const SAMPLE_MINISTRY_ICONS = ["church", "handHeart", "book", "baby"];
 
 const client = getCliClient();
 
+function toBlock(text: string) {
+  return [
+    {
+      _type: "block",
+      _key: "stmt",
+      style: "normal",
+      markDefs: [],
+      children: [{ _type: "span", _key: "stmt-span", text, marks: [] }],
+    },
+  ];
+}
+
 const DEFAULT_SEO = {
   title: `${org.name} (ESF) — Campus Ministry`,
   description:
@@ -103,7 +115,7 @@ async function run() {
       primaryCta: cta(hero.primaryCta.label, hero.primaryCta.href),
       secondaryCta: cta(hero.secondaryCta.label, hero.secondaryCta.href),
     },
-    mission: { title: mission.title, statement: mission.statement },
+    mission: { title: mission.title, statement: toBlock(mission.statement) },
     contactCta: {
       title: "Have a question? We'd love to hear from you.",
       subtitle: "Reach out about a gathering, a ministry, or just to say hello.",

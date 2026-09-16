@@ -13,10 +13,12 @@
     "seed:bulletins": "sanity exec scripts/seed-bulletins.ts --with-user-token",
     "seed:content": "sanity exec scripts/seed-content.ts --with-user-token",
     "upload:hero-video": "sanity exec scripts/upload-hero-video.ts --with-user-token --",
+    "migrate:mission-statement": "sanity exec scripts/migrate-mission-statement.ts --with-user-token",
     "sanity:schema": "sanity schemas extract --enforce-required-fields --force",
     "sanity:typegen": "npm run sanity:schema && sanity typegen generate"
   },
   "dependencies": {
+    "@portabletext/react": "^7.0.1",
     "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^6.11.0",
     "lucide-react": "^1.33.0",
