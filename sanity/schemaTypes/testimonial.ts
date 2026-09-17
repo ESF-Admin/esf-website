@@ -18,7 +18,16 @@ export const testimonial = defineType({
       title: "Name",
       type: "string",
       description: 'Use a first name only, or "Student name" to keep it anonymous.',
-      validation: (rule) => rule.required().max(60),
+      validation: (rule) =>
+        rule
+          .required()
+          .max(60)
+          .custom((value: string | undefined) =>
+            value && /\s/.test(value.trim()) && !/^student name$/i.test(value.trim())
+              ? 'Consider a first name only (or "Student name") to keep this anonymous.'
+              : true,
+          )
+          .warning(),
     }),
     defineField({
       name: "role",

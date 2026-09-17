@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getSiteSettings } from "@/lib/sanity/queries";
 import { getInternalSanityClient } from "@/lib/sanity/internal-client";
+import { contactNotificationEmail, contactAutoReplyEmail } from "@/lib/email/contact-templates";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { org } = await getSiteSettings();
+  const { org, service } = await getSiteSettings();
   const resend = new Resend(apiKey);
   const to = process.env.CONTACT_TO_EMAIL || org.email;
   const from = process.env.CONTACT_FROM_EMAIL || "ESF Website <onboarding@resend.dev>";
@@ -149,27 +150,23 @@ export async function POST(req: Request) {
   }
 
   try {
+    const notification = contactNotificationEmail({ name, email, phone, message, org });
     await resend.emails.send({
       from,
       to,
       replyTo: email,
-      subject: `New contact form message from ${name}`,
-      text: [
-        `Name: ${name}`,
-        `Email: ${email}`,
-        phone && `Phone: ${phone}`,
-        "",
-        message,
-      ]
-        .filter(Boolean)
-        .join("\n"),
+      subject: notification.subject,
+      html: notification.html,
+      text: notification.text,
     });
 
+    const autoReply = contactAutoReplyEmail({ name, org, service });
     await resend.emails.send({
       from,
       to: email,
-      subject: "We received your message — ESF",
-      text: `Hi ${name},\n\nThanks for contacting us! We received your message and will be in touch with you shortly.\n\n${org.name}`,
+      subject: autoReply.subject,
+      html: autoReply.html,
+      text: autoReply.text,
     });
   } catch (err) {
     console.error("Resend send failed:", err);
