@@ -1,7 +1,7 @@
 import { defineField, defineType } from "sanity";
 import { fileTypeValidator, fileSizeValidator } from "./shared";
 
-const MAX_HERO_VIDEO_BYTES = 15_000_000;
+const MAX_HERO_VIDEO_BYTES = 25_000_000;
 
 type HeroParent = { video?: { asset?: unknown } };
 
@@ -56,7 +56,7 @@ export const homePage = defineType({
           type: "file",
           options: { accept: "video/mp4,video/webm" },
           description:
-            "Short, silent, looping video behind the hero. Keep it small — under 15MB — since it autoplays for every visitor. Optional; the decorative illustration shows instead when empty.",
+            "Short, silent, looping video behind the hero. Keep it small — under 25MB — since it autoplays for every visitor, including on mobile data. Optional; the decorative illustration shows instead when empty.",
           validation: (rule) =>
             rule
               .custom(

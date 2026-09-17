@@ -42,9 +42,21 @@ const nextConfig: NextConfig = {
               "frame-src 'self' https://view.officeapps.live.com https://*.sanity.io https://www.google.com/recaptcha/",
               // React dev mode calls eval() for its debugging tools — never
               // in production, so 'unsafe-eval' is dev-only, not a prod hole.
+              // 'unsafe-inline' stays: the one inline <script> (homepage
+              // JSON-LD) renders CMS-editor data, not user input, and Next's
+              // App Router injects its own inline hydration scripts on every
+              // page — removing this needs nonce-based CSP, which forces the
+              // whole site into dynamic rendering and drops ISR/static
+              // caching for bulletins/sermons. Not worth that cost for a
+              // script tag with no user-controlled input reaching it.
               `script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/${
                 process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""
               }`,
+              // 'unsafe-inline' required: framer-motion (nav, hero, reveal,
+              // testimonials) animates by writing to element.style directly,
+              // which CSP style-src governs same as a style="" attribute.
+              // Dropping this needs replacing those animations with
+              // CSS-class-driven ones — a real rewrite, not a config change.
               "style-src 'self' 'unsafe-inline'",
             ].join("; "),
           },

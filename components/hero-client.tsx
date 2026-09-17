@@ -74,14 +74,8 @@ export function HeroClient({ eyebrow, title, body, primaryCta, secondaryCta, vid
         // Ambient background motion — decorative only, shown when no video is set.
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
           <div className="esf-blob absolute -top-40 -left-32 size-[36rem] rounded-full bg-primary/15 blur-3xl" />
-          <div
-            className="esf-blob absolute -right-24 top-24 size-[30rem] rounded-full bg-accent/15 blur-3xl"
-            style={{ animationDelay: "-7s" }}
-          />
-          <div
-            className="esf-blob absolute bottom-0 left-1/3 size-[26rem] rounded-full bg-primary/10 blur-3xl"
-            style={{ animationDelay: "-14s" }}
-          />
+          <div className="esf-blob absolute -right-24 top-24 size-[30rem] rounded-full bg-accent/15 blur-3xl [animation-delay:-7s]" />
+          <div className="esf-blob absolute bottom-0 left-1/3 size-[26rem] rounded-full bg-primary/10 blur-3xl [animation-delay:-14s]" />
         </div>
       )}
 
