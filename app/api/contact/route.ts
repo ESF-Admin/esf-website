@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getSiteSettings } from "@/lib/sanity/queries";
+import { getInternalSanityClient } from "@/lib/sanity/internal-client";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+const MAX_BODY_BYTES = 20_000;
+const MAX_NAME = 120;
+const MAX_EMAIL = 200;
+const MAX_PHONE = 30;
+const MAX_MESSAGE = 5000;
+const MIN_MESSAGE = 10;
+
 // ponytail: in-memory rate limit — resets on cold start and isn't shared
 // across serverless instances, so it's a soft "slow down a bot on this
-// instance" guard, not a hard cap. Upgrade to Vercel KV/Upstash if abuse
-// becomes real (needs multi-instance shared state to be exact).
+// instance" guard, not a hard cap. Kept as a cheap backup now that
+// reCAPTCHA below is the real bot gate — a bot that fails reCAPTCHA never
+// reaches this check, so per-instance imprecision here matters much less.
 const hits = new Map<string, number[]>();
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_WINDOW = 3;
@@ -20,11 +29,38 @@ function rateLimited(ip: string) {
   return recent.length > MAX_PER_WINDOW;
 }
 
+/**
+ * Verifies a reCAPTCHA v3 token server-side. Skips (returns true) when
+ * RECAPTCHA_SECRET_KEY isn't set, matching this route's existing
+ * degrade-don't-throw convention for unprovisioned services — local dev
+ * without a reCAPTCHA account still works.
+ */
+async function verifyRecaptcha(token: string | undefined, ip: string) {
+  const secret = process.env.RECAPTCHA_SECRET_KEY;
+  if (!secret) return true;
+  if (!token) return false;
+
+  try {
+    const params = new URLSearchParams({ secret, response: token, remoteip: ip });
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params,
+    });
+    const data: { success?: boolean; score?: number } = await res.json();
+    return !!data.success && (data.score ?? 0) >= 0.5;
+  } catch (err) {
+    console.error("reCAPTCHA verification failed:", err);
+    return false;
+  }
+}
+
 type Body = {
   name?: string;
   email?: string;
   phone?: string;
   message?: string;
+  recaptchaToken?: string;
   // Honeypot — real visitors never fill this (it's hidden via CSS).
   company?: string;
 };
@@ -36,6 +72,14 @@ export async function POST(req: Request) {
       { error: "Too many messages sent recently. Please try again later." },
       { status: 429 },
     );
+  }
+
+  // Reject an oversized request before buffering the body into memory.
+  // Content-Length is client-reported and can be spoofed/omitted, but this
+  // still stops the common case (a naive bot posting a huge payload) cheaply.
+  const contentLength = Number(req.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "Request too large." }, { status: 413 });
   }
 
   let body: Body;
@@ -50,12 +94,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const name = body.name?.trim() ?? "";
-  const email = body.email?.trim() ?? "";
-  const phone = body.phone?.trim() ?? "";
-  const message = body.message?.trim() ?? "";
+  const name = (body.name ?? "").trim();
+  const email = (body.email ?? "").trim();
+  const phone = (body.phone ?? "").trim();
+  const message = (body.message ?? "").trim();
 
-  if (!name || !EMAIL.test(email) || message.length < 10) {
+  const valid =
+    name.length > 0 &&
+    name.length <= MAX_NAME &&
+    EMAIL.test(email) &&
+    email.length <= MAX_EMAIL &&
+    phone.length <= MAX_PHONE &&
+    message.length >= MIN_MESSAGE &&
+    message.length <= MAX_MESSAGE;
+
+  if (!valid) {
+    return NextResponse.json({ error: "Please check the form and try again." }, { status: 400 });
+  }
+
+  if (!(await verifyRecaptcha(body.recaptchaToken, ip))) {
     return NextResponse.json({ error: "Please check the form and try again." }, { status: 400 });
   }
 
@@ -72,6 +129,24 @@ export async function POST(req: Request) {
   const resend = new Resend(apiKey);
   const to = process.env.CONTACT_TO_EMAIL || org.email;
   const from = process.env.CONTACT_FROM_EMAIL || "ESF Website <onboarding@resend.dev>";
+
+  // Best-effort audit trail in the private "internal" Sanity dataset — fired
+  // without awaiting so a Sanity outage never slows or blocks the visitor's
+  // email from sending. Failure is logged, not surfaced to the client.
+  const internalClient = getInternalSanityClient();
+  if (internalClient) {
+    internalClient
+      .create({
+        _type: "contactSubmission",
+        name,
+        email,
+        phone: phone || undefined,
+        message,
+        submittedAt: new Date().toISOString(),
+        ip,
+      })
+      .catch((err) => console.error("Failed to store contact submission:", err));
+  }
 
   try {
     await resend.emails.send({
@@ -94,7 +169,7 @@ export async function POST(req: Request) {
       from,
       to: email,
       subject: "We received your message — ESF",
-      text: `Hi ${name},\n\nThanks for reaching out to ${org.name}. We received your message and will be in touch soon.\n\n${org.name}`,
+      text: `Hi ${name},\n\nThanks for contacting us! We received your message and will be in touch with you shortly.\n\n${org.name}`,
     });
   } catch (err) {
     console.error("Resend send failed:", err);

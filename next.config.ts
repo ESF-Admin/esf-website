@@ -33,13 +33,15 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "connect-src 'self' https://*.sanity.io",
+              "connect-src 'self' https://*.sanity.io https://www.google.com",
               "img-src 'self' data: https://cdn.sanity.io",
               "media-src 'self' https://cdn.sanity.io",
-              "frame-src 'self' https://view.officeapps.live.com https://*.sanity.io",
+              // reCAPTCHA v3 renders an invisible verification iframe even
+              // with no visible challenge — frame-src must allow it.
+              "frame-src 'self' https://view.officeapps.live.com https://*.sanity.io https://www.google.com/recaptcha/",
               // React dev mode calls eval() for its debugging tools — never
               // in production, so 'unsafe-eval' is dev-only, not a prod hole.
-              `script-src 'self' 'unsafe-inline'${
+              `script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/${
                 process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""
               }`,
               "style-src 'self' 'unsafe-inline'",

@@ -237,10 +237,14 @@ test.describe("ESF landing page", () => {
     await form.getByRole("button", { name: "Send message" }).click();
     await expect(form.getByText(/Enter a valid email address/)).toBeVisible();
 
-    // Fixing it lets the form through.
+    // Fixing it lets the form through. On success the form itself is
+    // replaced by a confirmation panel, not shown alongside it.
     await form.getByLabel(/^Email/).fill("person@example.com");
     await form.getByRole("button", { name: "Send message" }).click();
-    await expect(form.getByText(/your message has been received/i)).toBeVisible();
+    await expect(
+      page.getByText(/Thanks for contacting us! We will be in touch with you shortly\./i),
+    ).toBeVisible();
+    await expect(page.getByRole("form", { name: "Contact form" })).toHaveCount(0);
   });
 
   test("testimonial carousel advances", async ({ page }) => {

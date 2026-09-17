@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
+import Script from "next/script";
 import { CheckCircle2, Mail, MapPin, Phone } from "lucide-react";
 import { org } from "@/lib/content";
 import { safeHref } from "@/lib/href";
@@ -12,22 +13,48 @@ type Errors = Partial<Record<Field, string>>;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+// Duplicated from app/api/contact/route.ts on purpose — same idiom as the
+// EMAIL regex above: the client copy gives instant feedback, the server
+// copy is the one that actually matters and never trusts this one.
+const MAX_NAME = 120;
+const MAX_EMAIL = 200;
+const MAX_PHONE = 30;
+const MAX_MESSAGE = 5000;
+
+const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+declare global {
+  interface Window {
+    grecaptcha?: {
+      ready: (callback: () => void) => void;
+      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+    };
+  }
+}
+
 function validate(values: Record<Field, string>): Errors {
   const errors: Errors = {};
 
   if (!values.name.trim()) errors.name = "Please enter your name.";
+  else if (values.name.trim().length > MAX_NAME) errors.name = "Name is too long.";
 
   if (!values.email.trim()) errors.email = "Please enter your email address.";
   else if (!EMAIL.test(values.email.trim()))
     errors.email = "Enter a valid email address, for example name@example.com.";
+  else if (values.email.trim().length > MAX_EMAIL) errors.email = "Email is too long.";
 
   // Phone is optional, but if given it must look like a phone number.
-  if (values.phone.trim() && !/^[\d\s()+.-]{7,}$/.test(values.phone.trim()))
-    errors.phone = "Enter a valid phone number, or leave this blank.";
+  if (values.phone.trim()) {
+    if (!/^[\d\s()+.-]{7,}$/.test(values.phone.trim()))
+      errors.phone = "Enter a valid phone number, or leave this blank.";
+    else if (values.phone.trim().length > MAX_PHONE) errors.phone = "Phone number is too long.";
+  }
 
   if (!values.message.trim()) errors.message = "Please enter a message.";
   else if (values.message.trim().length < 10)
     errors.message = "Please write at least 10 characters so we can help.";
+  else if (values.message.trim().length > MAX_MESSAGE)
+    errors.message = `Message is too long — please keep it under ${MAX_MESSAGE} characters.`;
 
   return errors;
 }
@@ -58,6 +85,21 @@ export function ContactSection({ title, subtitle }: Props) {
     }
   };
 
+  // Resolves to undefined (never throws) when reCAPTCHA isn't configured or
+  // hasn't loaded yet — the API route itself skips verification in that
+  // case, same degrade-don't-throw convention used throughout this route.
+  const getRecaptchaToken = async (): Promise<string | undefined> => {
+    if (!RECAPTCHA_SITE_KEY || !window.grecaptcha) return undefined;
+    return new Promise((resolve) => {
+      window.grecaptcha!.ready(() => {
+        window
+          .grecaptcha!.execute(RECAPTCHA_SITE_KEY, { action: "contact" })
+          .then(resolve)
+          .catch(() => resolve(undefined));
+      });
+    });
+  };
+
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const found = validate(values);
@@ -73,10 +115,15 @@ export function ContactSection({ title, subtitle }: Props) {
 
     setSending(true);
     try {
+      const recaptchaToken = await getRecaptchaToken();
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, company: honeypotRef.current?.value }),
+        body: JSON.stringify({
+          ...values,
+          company: honeypotRef.current?.value,
+          recaptchaToken,
+        }),
       });
       const data: { ok?: boolean; error?: string } = await res.json();
       if (!res.ok || !data.ok) {
@@ -96,106 +143,122 @@ export function ContactSection({ title, subtitle }: Props) {
 
   return (
     <Section id="contact" title={title} subtitle={subtitle} headingLevel="h1">
+      {RECAPTCHA_SITE_KEY && (
+        <Script
+          src={`https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`}
+          strategy="afterInteractive"
+        />
+      )}
       <div className="grid gap-12 lg:grid-cols-[1fr_minmax(0,22rem)]">
-        <form
-          ref={formRef}
-          onSubmit={onSubmit}
-          noValidate
-          aria-label="Contact form"
-          className="rounded-2xl border border-border bg-surface p-7 sm:p-9"
-        >
-          {/* Honeypot — hidden from real visitors, bots fill every field. */}
-          <input
-            ref={honeypotRef}
-            type="text"
-            name="company"
-            tabIndex={-1}
-            autoComplete="off"
-            aria-hidden="true"
-            className="absolute left-[-9999px] h-0 w-0 opacity-0"
-          />
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            <TextField
-              name="name"
-              label="Name"
-              required
-              autoComplete="name"
-              value={values.name}
-              error={errors.name}
-              onChange={set}
-            />
-            <TextField
-              name="email"
-              label="Email"
-              type="email"
-              required
-              autoComplete="email"
-              value={values.email}
-              error={errors.email}
-              onChange={set}
-            />
-            <div className="sm:col-span-2">
-              <TextField
-                name="phone"
-                label="Phone"
-                type="tel"
-                autoComplete="tel"
-                hint="Optional — include it if you would rather we call."
-                value={values.phone}
-                error={errors.phone}
-                onChange={set}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <TextField
-                name="message"
-                label="Message"
-                required
-                multiline
-                value={values.message}
-                error={errors.message}
-                onChange={set}
-              />
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <button
-              type="submit"
-              disabled={sending}
-              className="cursor-pointer rounded-full bg-gradient-to-r from-primary to-accent px-7 py-3.5 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-            >
-              {sending ? "Sending…" : "Send message"}
-            </button>
-            <p className="text-sm text-muted-foreground">
-              <span aria-hidden className="text-destructive">
-                *
-              </span>{" "}
-              marks a required field.
-            </p>
-          </div>
-
-          <p
+        {sent ? (
+          <div
             role="status"
             aria-live="polite"
-            className={`mt-6 flex items-center gap-2 text-sm font-medium text-accent ${sent ? "" : "sr-only"}`}
+            className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-surface p-7 text-center sm:p-9"
           >
-            {sent && (
-              <>
-                <CheckCircle2 aria-hidden className="size-5" />
-                Thank you — your message has been received. We will be in touch
-                soon.
-              </>
-            )}
-          </p>
-
-          {sendError && (
-            <p role="alert" className="mt-6 text-sm font-medium text-destructive">
-              {sendError}
+            <CheckCircle2 aria-hidden className="size-12 text-accent" />
+            <p className="text-lg font-semibold text-foreground">
+              Thanks for contacting us! We will be in touch with you shortly.
             </p>
-          )}
-        </form>
+            <button
+              type="button"
+              onClick={() => setSent(false)}
+              className="mt-2 cursor-pointer rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-surface-2"
+            >
+              Send another message
+            </button>
+          </div>
+        ) : (
+          <form
+            ref={formRef}
+            onSubmit={onSubmit}
+            noValidate
+            aria-label="Contact form"
+            className="rounded-2xl border border-border bg-surface p-7 sm:p-9"
+          >
+            {/* Honeypot — hidden from real visitors, bots fill every field. */}
+            <input
+              ref={honeypotRef}
+              type="text"
+              name="company"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="absolute left-[-9999px] h-0 w-0 opacity-0"
+            />
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              <TextField
+                name="name"
+                label="Name"
+                required
+                autoComplete="name"
+                maxLength={MAX_NAME}
+                value={values.name}
+                error={errors.name}
+                onChange={set}
+              />
+              <TextField
+                name="email"
+                label="Email"
+                type="email"
+                required
+                autoComplete="email"
+                maxLength={MAX_EMAIL}
+                value={values.email}
+                error={errors.email}
+                onChange={set}
+              />
+              <div className="sm:col-span-2">
+                <TextField
+                  name="phone"
+                  label="Phone"
+                  type="tel"
+                  autoComplete="tel"
+                  hint="Optional — include it if you would rather we call."
+                  maxLength={MAX_PHONE}
+                  value={values.phone}
+                  error={errors.phone}
+                  onChange={set}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <TextField
+                  name="message"
+                  label="Message"
+                  required
+                  multiline
+                  maxLength={MAX_MESSAGE}
+                  value={values.message}
+                  error={errors.message}
+                  onChange={set}
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <button
+                type="submit"
+                disabled={sending}
+                className="cursor-pointer rounded-full bg-gradient-to-r from-primary to-accent px-7 py-3.5 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                {sending ? "Sending…" : "Send message"}
+              </button>
+              <p className="text-sm text-muted-foreground">
+                <span aria-hidden className="text-destructive">
+                  *
+                </span>{" "}
+                marks a required field.
+              </p>
+            </div>
+
+            {sendError && (
+              <p role="alert" className="mt-6 text-sm font-medium text-destructive">
+                {sendError}
+              </p>
+            )}
+          </form>
+        )}
 
         <div className="space-y-8">
           <div className="rounded-2xl border border-border bg-surface-2 p-7">
@@ -256,6 +319,7 @@ type FieldProps = {
   multiline?: boolean;
   hint?: string;
   autoComplete?: string;
+  maxLength?: number;
 };
 
 function TextField({
@@ -269,6 +333,7 @@ function TextField({
   multiline,
   hint,
   autoComplete,
+  maxLength,
 }: FieldProps) {
   const errorId = `${name}-error`;
   const hintId = `${name}-hint`;
@@ -281,6 +346,7 @@ function TextField({
     value,
     required,
     autoComplete,
+    maxLength,
     "aria-invalid": error ? (true as const) : undefined,
     "aria-describedby": describedBy,
     onChange: (
