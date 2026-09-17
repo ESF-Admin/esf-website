@@ -25,9 +25,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Skip /studio — Sanity's own bundle needs inline scripts/styles
-        // and frames itself for previews; a locked-down CSP there breaks it.
-        source: "/((?!studio).*)",
+        // Skip /studio and /internal — both are Sanity Studio workspaces
+        // whose bundle needs inline scripts/styles and frames itself for
+        // previews; a locked-down CSP there breaks it.
+        source: "/((?!studio|internal).*)",
         headers: [
           {
             key: "Content-Security-Policy",

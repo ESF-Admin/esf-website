@@ -41,7 +41,11 @@ const siteWorkspace = defineConfig({
 const internalWorkspace = defineConfig({
   name: "internal",
   title: "ESF website — Internal (contact submissions)",
-  basePath: "/studio/internal",
+  // Must be a single path segment, matching the default workspace's
+  // `/studio` — Sanity requires every workspace's basePath to have the same
+  // segment count (`/studio/internal` has 2 vs `/studio`'s 1 and fails at
+  // runtime with "Could not resolve workspace").
+  basePath: "/internal",
   projectId,
   dataset: "internal",
   schema: { types: [contactSubmission] },
