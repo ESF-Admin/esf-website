@@ -66,11 +66,14 @@ export function NavClient({ navLinks, orgName, ctaLabel, homeHasVideo }: Props) 
           href="/"
           onClick={(e) => {
             // Next's Link no-ops when already on the target route — force a
-            // real reload so clicking the logo on the homepage itself does
-            // something, matching the "always takes you home" expectation.
+            // fresh navigation so clicking the logo on the homepage itself
+            // does something, matching the "always takes you home" behavior.
+            // location.reload() would do this too, but browsers restore the
+            // prior scroll position on reload — reassigning href instead
+            // lands at the top, like arriving at the site fresh.
             if (pathname === "/") {
               e.preventDefault();
-              window.location.reload();
+              window.location.href = "/";
             }
           }}
           className="flex min-h-11 items-center gap-3 rounded-md"
