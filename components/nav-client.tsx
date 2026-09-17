@@ -64,6 +64,15 @@ export function NavClient({ navLinks, orgName, ctaLabel, homeHasVideo }: Props) 
       >
         <Link
           href="/"
+          onClick={(e) => {
+            // Next's Link no-ops when already on the target route — force a
+            // real reload so clicking the logo on the homepage itself does
+            // something, matching the "always takes you home" expectation.
+            if (pathname === "/") {
+              e.preventDefault();
+              window.location.reload();
+            }
+          }}
           className="flex min-h-11 items-center gap-3 rounded-md"
           aria-label={`${orgName} — home`}
         >
