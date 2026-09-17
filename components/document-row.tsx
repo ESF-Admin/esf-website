@@ -22,34 +22,53 @@ type Props = {
  * viewer page, not here, so there's exactly one Download control per entry.
  */
 export function DocumentRow({ entry, viewBasePath }: Props) {
+  // Bulletins carry a title/scripture in Sanity (sermons need them to tell
+  // messages apart), but a bulletin is just "this Sunday's bulletin" — the
+  // date alone identifies it, so bulletin rows show only the date, centered,
+  // instead of the title/scripture sermon rows use to stay distinct.
+  const isBulletin = viewBasePath === "/bulletins";
   const isUpcoming = !entry.scripture;
   const speaker = "speaker" in entry ? entry.speaker : undefined;
 
   return (
-    <div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center">
-      <span
-        aria-hidden
-        className="grid size-12 shrink-0 place-items-center rounded-full bg-accent-soft text-accent"
+    <div
+      className={`flex flex-col gap-4 py-6 sm:flex-row sm:items-center ${
+        isBulletin ? "sm:justify-between" : ""
+      }`}
+    >
+      <div
+        className={`flex min-w-0 flex-1 items-center gap-3 ${
+          isBulletin ? "justify-center" : ""
+        }`}
       >
-        <FileText className="size-5" strokeWidth={1.75} />
-      </span>
+        <span
+          aria-hidden
+          className="grid size-12 shrink-0 place-items-center rounded-full bg-accent-soft text-accent"
+        >
+          <FileText className="size-5" strokeWidth={1.75} />
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">
-          {formatDate(entry.date)}
-        </p>
-        <h3 className="mt-1 text-lg font-semibold text-balance">
-          {entry.title}
-          {isUpcoming && (
-            <span className="ml-2 align-middle text-xs font-medium text-muted-foreground">
-              (upcoming)
-            </span>
-          )}
-        </h3>
-        {(entry.scripture || speaker) && (
-          <p className="mt-1 text-sm text-muted-foreground">
-            {[entry.scripture, speaker].filter(Boolean).join(" · ")}
-          </p>
+        {isBulletin ? (
+          <p className="text-lg font-semibold text-balance">{formatDate(entry.date)}</p>
+        ) : (
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+              {formatDate(entry.date)}
+            </p>
+            <h3 className="mt-1 text-lg font-semibold text-balance">
+              {entry.title}
+              {isUpcoming && (
+                <span className="ml-2 align-middle text-xs font-medium text-muted-foreground">
+                  (upcoming)
+                </span>
+              )}
+            </h3>
+            {(entry.scripture || speaker) && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {[entry.scripture, speaker].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
