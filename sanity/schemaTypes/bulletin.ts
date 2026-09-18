@@ -9,6 +9,10 @@ import {
   WORD_EXTENSIONS,
 } from "./shared";
 
+// Bulletins carry no title/scripture — a bulletin is just "this Sunday's
+// order of service," identified by date alone. Sermons keep both (see
+// sermon.ts) since a sermon needs to be distinguished by message.
+
 export const bulletin = defineType({
   name: "bulletin",
   title: "Bulletin",

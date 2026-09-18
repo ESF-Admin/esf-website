@@ -22,12 +22,14 @@ type Props = {
  * viewer page, not here, so there's exactly one Download control per entry.
  */
 export function DocumentRow({ entry, viewBasePath }: Props) {
-  // Bulletins carry a title/scripture in Sanity (sermons need them to tell
-  // messages apart), but a bulletin is just "this Sunday's bulletin" — the
-  // date alone identifies it, so bulletin rows show only the date, centered,
-  // instead of the title/scripture sermon rows use to stay distinct.
+  // Bulletins carry no title/scripture in Sanity (sermons need them to tell
+  // messages apart) — a bulletin is just "this Sunday's bulletin", so bulletin
+  // rows show only the date, centered, instead of the title/scripture sermon
+  // rows use to stay distinct.
   const isBulletin = viewBasePath === "/bulletins";
-  const isUpcoming = !entry.scripture;
+  const title = "title" in entry ? entry.title : undefined;
+  const scripture = "scripture" in entry ? entry.scripture : undefined;
+  const isUpcoming = !scripture;
   const speaker = "speaker" in entry ? entry.speaker : undefined;
 
   return (
@@ -56,16 +58,16 @@ export function DocumentRow({ entry, viewBasePath }: Props) {
               {formatDate(entry.date)}
             </p>
             <h3 className="mt-1 text-lg font-semibold text-balance">
-              {entry.title}
+              {title}
               {isUpcoming && (
                 <span className="ml-2 align-middle text-xs font-medium text-muted-foreground">
                   (upcoming)
                 </span>
               )}
             </h3>
-            {(entry.scripture || speaker) && (
+            {(scripture || speaker) && (
               <p className="mt-1 text-sm text-muted-foreground">
-                {[entry.scripture, speaker].filter(Boolean).join(" · ")}
+                {[scripture, speaker].filter(Boolean).join(" · ")}
               </p>
             )}
           </div>
@@ -78,7 +80,8 @@ export function DocumentRow({ entry, viewBasePath }: Props) {
             // Prefer the PDF — browsers render it natively and instantly.
             // No PDF yet: fall back to the slower Word-document viewer.
             const src = entry.pdfUrl ?? entry.fileUrl!;
-            const params = new URLSearchParams({ src, title: entry.title });
+            const params = new URLSearchParams({ src });
+            if (title) params.set("title", title);
             if (entry.pdfUrl) params.set("type", "pdf");
             return `${viewBasePath}/view?${params.toString()}`;
           })()}

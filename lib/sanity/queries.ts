@@ -51,19 +51,22 @@ async function sanityFetch<T>(
 
 type BulletinDoc = {
   date: string;
-  title: string;
-  scripture?: string;
   fileUrl?: string;
   pdfUrl?: string;
 };
 
-type SermonDoc = BulletinDoc & { speaker?: string };
+type SermonDoc = {
+  date: string;
+  title: string;
+  scripture?: string;
+  speaker?: string;
+  fileUrl?: string;
+  pdfUrl?: string;
+};
 
 const BULLETINS_QUERY = defineQuery(`
   *[_type == "bulletin" && locale == $locale] | order(date desc) [$start...$end] {
     date,
-    title,
-    scripture,
     "fileUrl": file.asset->url,
     "pdfUrl": pdf.asset->url
   }

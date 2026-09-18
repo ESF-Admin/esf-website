@@ -62,17 +62,20 @@ export const docLocales: { code: DocLocale; label: string }[] = [
 export type BulletinEntry = {
   /** ISO date — the single sort key, so the list can never drift out of order. */
   date: string;
-  title: string;
-  scripture?: string;
   /** Word-doc URL, offered for Download and as the View fallback. */
   fileUrl?: string;
   /** Optional PDF — when present, View uses it directly (instant, native browser rendering). */
   pdfUrl?: string;
 };
 
-export type SermonEntry = BulletinEntry & {
+export type SermonEntry = {
+  date: string;
+  title: string;
+  scripture?: string;
   /** Who preached — the sermon's own manuscript, distinct from the bulletin's order-of-service. */
   speaker?: string;
+  fileUrl?: string;
+  pdfUrl?: string;
 };
 
 // Bulletin and sermon entries themselves live in Sanity (see

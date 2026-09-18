@@ -1,6 +1,8 @@
 import { defineField, defineType } from "sanity";
 import {
   weeklyDocumentFields,
+  titleField,
+  scriptureField,
   weeklyDocumentOrderings,
   weeklyDocumentPreview,
   pdfField,
@@ -15,6 +17,8 @@ export const sermon = defineType({
   type: "document",
   fields: [
     ...weeklyDocumentFields("sermon"),
+    titleField(),
+    scriptureField(),
     defineField({
       name: "speaker",
       title: "Speaker",

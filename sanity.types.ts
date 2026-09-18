@@ -249,9 +249,9 @@ export type Sermon = {
   _updatedAt: string;
   _rev: string;
   date: string;
+  locale: "en" | "es" | "fr";
   title: string;
   scripture?: string;
-  locale: "en" | "es" | "fr";
   speaker?: string;
   file?: {
     asset?: SanityFileAssetReference;
@@ -272,8 +272,6 @@ export type Bulletin = {
   _updatedAt: string;
   _rev: string;
   date: string;
-  title: string;
-  scripture?: string;
   locale: "en" | "es" | "fr";
   file?: {
     asset?: SanityFileAssetReference;
@@ -423,11 +421,9 @@ export type AllSanitySchemaTypes =
 
 // Source: lib/sanity/queries.ts
 // Variable: BULLETINS_QUERY
-// Query: *[_type == "bulletin" && locale == $locale] | order(date desc) [$start...$end] {    date,    title,    scripture,    "fileUrl": file.asset->url,    "pdfUrl": pdf.asset->url  }
+// Query: *[_type == "bulletin" && locale == $locale] | order(date desc) [$start...$end] {    date,    "fileUrl": file.asset->url,    "pdfUrl": pdf.asset->url  }
 export type BULLETINS_QUERY_RESULT = Array<{
   date: string;
-  title: string;
-  scripture: string | null;
   fileUrl: string | null;
   pdfUrl: string | null;
 }>;
@@ -465,8 +461,6 @@ export type SITE_SETTINGS_QUERY_RESULT =
       _updatedAt: string;
       _rev: string;
       date: string;
-      title: string;
-      scripture?: string;
       locale: "en" | "es" | "fr";
       file?: {
         asset?: SanityFileAssetReference;
@@ -623,9 +617,9 @@ export type SITE_SETTINGS_QUERY_RESULT =
       _updatedAt: string;
       _rev: string;
       date: string;
+      locale: "en" | "es" | "fr";
       title: string;
       scripture?: string;
-      locale: "en" | "es" | "fr";
       speaker?: string;
       file?: {
         asset?: SanityFileAssetReference;
@@ -704,8 +698,6 @@ export type HOME_PAGE_QUERY_RESULT =
       _updatedAt: string;
       _rev: string;
       date: string;
-      title: string;
-      scripture?: string;
       locale: "en" | "es" | "fr";
       file?: {
         asset?: SanityFileAssetReference;
@@ -878,9 +870,9 @@ export type HOME_PAGE_QUERY_RESULT =
       _updatedAt: string;
       _rev: string;
       date: string;
+      locale: "en" | "es" | "fr";
       title: string;
       scripture?: string;
-      locale: "en" | "es" | "fr";
       speaker?: string;
       file?: {
         asset?: SanityFileAssetReference;
@@ -988,7 +980,7 @@ export type TESTIMONIALS_QUERY_RESULT = Array<{
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
-    '\n  *[_type == "bulletin" && locale == $locale] | order(date desc) [$start...$end] {\n    date,\n    title,\n    scripture,\n    "fileUrl": file.asset->url,\n    "pdfUrl": pdf.asset->url\n  }\n': BULLETINS_QUERY_RESULT;
+    '\n  *[_type == "bulletin" && locale == $locale] | order(date desc) [$start...$end] {\n    date,\n    "fileUrl": file.asset->url,\n    "pdfUrl": pdf.asset->url\n  }\n': BULLETINS_QUERY_RESULT;
     '\n  *[_type == "sermon" && locale == $locale] | order(date desc) [$start...$end] {\n    date,\n    title,\n    scripture,\n    speaker,\n    "fileUrl": file.asset->url,\n    "pdfUrl": pdf.asset->url\n  }\n': SERMONS_QUERY_RESULT;
     '\n  count(*[_type == "bulletin" && locale == $locale])\n': BULLETINS_COUNT_QUERY_RESULT;
     '\n  count(*[_type == "sermon" && locale == $locale])\n': SERMONS_COUNT_QUERY_RESULT;

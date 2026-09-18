@@ -53,6 +53,13 @@ export const contentGroups = [
   { name: "seo", title: "Search & sharing" },
 ] as const;
 
+/** The three languages bulletins/sermons are published in — shared by the `locale` field's options and by the Studio structure's per-language sublists. */
+export const DOC_LOCALES = [
+  { title: "English", value: "en" },
+  { title: "Spanish", value: "es" },
+  { title: "French", value: "fr" },
+] as const;
+
 /** Fields common to both weekly document types (bulletin, sermon). */
 export function weeklyDocumentFields(kind: "bulletin" | "sermon") {
   return [
@@ -64,33 +71,37 @@ export function weeklyDocumentFields(kind: "bulletin" | "sermon") {
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "title",
-      title: "Message title",
-      type: "string",
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "scripture",
-      title: "Scripture reference",
-      type: "string",
-      description: `e.g. "John 6:25–35". Leave blank for an upcoming/not-yet-preached ${kind}.`,
-    }),
-    defineField({
       name: "locale",
       title: "Language",
       type: "string",
       options: {
-        list: [
-          { title: "English", value: "en" },
-          { title: "Spanish", value: "es" },
-          { title: "French", value: "fr" },
-        ],
+        list: [...DOC_LOCALES],
         layout: "radio",
       },
       initialValue: "en",
       validation: (rule) => rule.required(),
     }),
   ];
+}
+
+/** Sermon-only: the message title (bulletins are identified by date alone). */
+export function titleField() {
+  return defineField({
+    name: "title",
+    title: "Message title",
+    type: "string",
+    validation: (rule) => rule.required(),
+  });
+}
+
+/** Sermon-only: the passage preached from. */
+export function scriptureField() {
+  return defineField({
+    name: "scripture",
+    title: "Scripture reference",
+    type: "string",
+    description: 'e.g. "John 6:25–35". Leave blank for an upcoming/not-yet-preached sermon.',
+  });
 }
 
 type FileFieldValue = { asset?: { _ref?: string } } | undefined;
@@ -243,7 +254,7 @@ export function weeklyDocumentPreview() {
         locale?: string;
       };
       return {
-        title: title ?? "Untitled",
+        title: title ?? date ?? "Untitled",
         subtitle: [date, locale].filter(Boolean).join(" · "),
       };
     },

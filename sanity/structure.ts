@@ -1,4 +1,5 @@
 import type { StructureResolver } from "sanity/structure";
+import { DOC_LOCALES } from "./schemaTypes/shared";
 
 /**
  * Document types with a fixed `_id` that the admin can never create a
@@ -38,6 +39,33 @@ function singleton(
     .child(S.document().schemaType(type).documentId(id).title(title));
 }
 
+/** Bulletins/sermons list item that expands into one sublist per language, so an admin can find and validate a given language's entries at a glance. */
+function weeklyDocumentsByLocale(
+  S: Parameters<StructureResolver>[0],
+  type: "bulletin" | "sermon",
+  title: string,
+) {
+  return S.listItem()
+    .title(title)
+    .child(
+      S.list()
+        .title(title)
+        .items(
+          DOC_LOCALES.map(({ value, title: localeTitle }) =>
+            S.listItem()
+              .title(localeTitle)
+              .child(
+                S.documentTypeList(type)
+                  .title(`${title} — ${localeTitle}`)
+                  .filter("_type == $type && locale == $locale")
+                  .params({ type, locale: value })
+                  .defaultOrdering([{ field: "date", direction: "desc" }]),
+              ),
+          ),
+        ),
+    );
+}
+
 export const structure: StructureResolver = (S) =>
   S.list()
     .title("ESF website")
@@ -62,6 +90,6 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem("missionCountry").title("Mission countries"),
       S.documentTypeListItem("testimonial").title("Student stories"),
       S.divider(),
-      S.documentTypeListItem("bulletin").title("Bulletins"),
-      S.documentTypeListItem("sermon").title("Sermons"),
+      weeklyDocumentsByLocale(S, "bulletin", "Bulletins"),
+      weeklyDocumentsByLocale(S, "sermon", "Sermons"),
     ]);
