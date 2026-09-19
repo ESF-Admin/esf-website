@@ -5,17 +5,15 @@ import { iconFor } from "@/lib/icon-map";
 type Props = {
   title: string;
   subtitle: string;
-  placeholder: boolean;
   items: { name: string; body: string; icon: string }[];
 };
 
-export function Ministries({ title, subtitle, placeholder, items }: Props) {
+export function Ministries({ title, subtitle, items }: Props) {
   return (
     <Section
       id="ministries"
       title={title}
       subtitle={subtitle}
-      placeholder={placeholder}
       headingLevel="h1"
       tinted
     >

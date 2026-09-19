@@ -9,7 +9,6 @@ import { pageMetadata } from "@/lib/seo";
 const FALLBACK = {
   title: ministries.title,
   intro: ministries.subtitle,
-  showPlaceholderBadge: ministries.placeholder as boolean,
   seo: pageSeoDefaults.ministries,
 };
 
@@ -35,7 +34,6 @@ export default async function MinistriesPage() {
         <Ministries
           title={data.title}
           subtitle={data.intro}
-          placeholder={data.showPlaceholderBadge}
           items={items}
         />
       </main>

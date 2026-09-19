@@ -9,7 +9,6 @@ import { iconFor } from "@/lib/icon-map";
 const FALLBACK = {
   title: ministries.title,
   intro: ministries.subtitle,
-  showPlaceholderBadge: ministries.placeholder as boolean,
 };
 
 /** Homepage teaser — full detail lives at /ministries, same CMS-backed data. */
@@ -24,7 +23,6 @@ export async function MinistriesTeaser() {
       id="ministries"
       title={data.title}
       subtitle={data.intro}
-      placeholder={data.showPlaceholderBadge}
     >
       <RevealGroup as="div" className="flex flex-wrap gap-3">
         {items.map((m) => {

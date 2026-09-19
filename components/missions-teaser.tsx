@@ -8,7 +8,6 @@ import { RevealGroup, RevealItem } from "./reveal";
 const FALLBACK = {
   title: missions.title,
   intro: missions.subtitle,
-  showPlaceholderBadge: missions.placeholder as boolean,
 };
 
 /** Homepage teaser — full detail lives at /missions, same CMS-backed data. */
@@ -23,7 +22,6 @@ export async function MissionsTeaser() {
       id="missions"
       title={data.title}
       subtitle={data.intro}
-      placeholder={data.showPlaceholderBadge}
       tinted
     >
       <RevealGroup as="div" className="flex flex-wrap gap-3">

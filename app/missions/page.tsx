@@ -9,7 +9,6 @@ import { pageMetadata } from "@/lib/seo";
 const FALLBACK = {
   title: missions.title,
   intro: missions.subtitle,
-  showPlaceholderBadge: missions.placeholder as boolean,
   seo: pageSeoDefaults.missions,
 };
 
@@ -35,7 +34,6 @@ export default async function MissionsPage() {
         <Missions
           title={data.title}
           subtitle={data.intro}
-          placeholder={data.showPlaceholderBadge}
           countries={countries}
         />
       </main>

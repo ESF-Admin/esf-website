@@ -238,7 +238,7 @@ type HomePageDoc = {
   };
   mission?: { title?: string; statement?: PortableTextBlock[] };
   contactCta?: { title?: string; subtitle?: string; cta?: CtaDoc };
-  testimonials?: { title?: string; subtitle?: string; showPlaceholderBadge?: boolean };
+  testimonials?: { title?: string; subtitle?: string };
 };
 
 // The GROQ image field selection shared by anything that projects an
@@ -268,7 +268,6 @@ const DEFAULT_CONTACT_CTA = {
 const DEFAULT_TESTIMONIALS_SECTION = {
   title: testimonials.title,
   subtitle: testimonials.subtitle,
-  showPlaceholderBadge: testimonials.placeholder as boolean,
 };
 
 /** Present only once a video file AND a poster (with usable dimensions) both exist — never a video with no fallback image. */
@@ -400,15 +399,13 @@ const TESTIMONIALS_QUERY = defineQuery(`
 `);
 
 /**
- * Student-story carousel entries — real `testimonial` documents, or
- * lib/content.ts's sample quotes if none exist yet.
+ * Student-story carousel entries — real `testimonial` documents only.
  */
 export async function getTestimonials(): Promise<TestimonialDoc[]> {
-  const entries = await sanityFetch<TestimonialDoc[]>(
+  return sanityFetch<TestimonialDoc[]>(
     TESTIMONIALS_QUERY,
     {},
     ["testimonial"],
     [],
-  );
-  return entries.length ? entries : [...testimonials.items];
+);
 }

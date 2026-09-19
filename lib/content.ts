@@ -1,9 +1,6 @@
 /**
  * Single source of truth for every string on the landing page.
  *
- * Anything marked `placeholder: true` is filler for layout only — it is
- * rendered with a visible "Placeholder" badge and must be replaced before
- * launch. Real, verified ESF facts live in `org`, `story` and `mission`.
  */
 
 export const org = {
@@ -142,8 +139,7 @@ export const hero = {
 export const ministries = {
   title: "Ministries",
   subtitle:
-    "Ways to get plugged in. Sample descriptions below show the layout.",
-  placeholder: true,
+    "Ways to get plugged in.",
   items: [
     {
       name: "Young Adults",
@@ -167,8 +163,7 @@ export const ministries = {
 export const missions = {
   title: "Missions",
   subtitle:
-    "Countries where ESF and its partners serve. Sample list shown for layout — add, remove or update at any time.",
-  placeholder: true,
+    "Countries where ESF and its partners serve.",
   countries: missionCountries,
 } as const;
 
@@ -211,28 +206,7 @@ export const mission = {
 
 export const testimonials = {
   title: "Student Stories",
-  subtitle: "Sample quotes shown to demonstrate the layout.",
-  placeholder: true,
-  items: [
-    {
-      quote:
-        "Sample testimonial text. This space is reserved for a student's own words about what the fellowship has meant to them during their time on campus.",
-      name: "Student name",
-      role: "Undergraduate · Sample university",
-    },
-    {
-      quote:
-        "Sample testimonial text. A second story goes here — how someone found community, and what they are learning about faith alongside their studies.",
-      name: "Student name",
-      role: "Graduate student · Sample university",
-    },
-    {
-      quote:
-        "Sample testimonial text. A third story rounds out the carousel, ideally from an alum reflecting on the years after graduation.",
-      name: "Alum name",
-      role: "Alum · Class year",
-    },
-  ],
+  subtitle: "",
 } as const;
 
 export const contact = {
@@ -240,21 +214,6 @@ export const contact = {
   subtitle:
     "Questions about a gathering, or want someone to reach out? Send a note and we will get back to you.",
 } as const;
-
-export type SocialName =
-  | "Facebook"
-  | "X"
-  | "YouTube"
-  | "Instagram"
-  | "LinkedIn";
-
-export const socials: { name: SocialName; href: string; label: string }[] = [
-  { name: "Facebook", href: "https://www.facebook.com/", label: "ESF on Facebook" },
-  { name: "X", href: "https://x.com/", label: "ESF on X (formerly Twitter)" },
-  { name: "YouTube", href: "https://www.youtube.com/", label: "ESF on YouTube" },
-  { name: "Instagram", href: "https://www.instagram.com/", label: "ESF on Instagram" },
-  { name: "LinkedIn", href: "https://www.linkedin.com/", label: "ESF on LinkedIn" },
-];
 
 // Per-page <title>/description fallback, used by each page's generateMetadata()
 // until (or unless) an editor sets a page's own "Search & sharing" fields in

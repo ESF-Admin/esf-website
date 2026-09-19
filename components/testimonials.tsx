@@ -8,11 +8,12 @@ export async function Testimonials() {
     getTestimonials(),
   ]);
 
+  if (!items.length) return null;
+
   return (
     <TestimonialsClient
       title={testimonials.title}
       subtitle={testimonials.subtitle}
-      placeholder={testimonials.showPlaceholderBadge}
       items={items}
     />
   );

@@ -70,11 +70,9 @@ test.describe("ESF landing page", () => {
     ).toBeVisible();
   });
 
-  test("placeholder sections are visibly flagged", async ({ page }) => {
+  test("no placeholder badge is shown", async ({ page }) => {
     await page.goto("/");
-    // Ministries, Missions and Student Stories each carry a badge.
-    // Bulletins and Sermons are Sanity-backed real data and carry none.
-    await expect(page.getByText("Placeholder content")).toHaveCount(3);
+    await expect(page.getByText(/placeholder/i)).toHaveCount(0);
   });
 
   test("bulletins teaser shows real entries and links to the archive", async ({

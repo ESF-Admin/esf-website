@@ -5,17 +5,15 @@ import { RevealGroup, RevealItem } from "./reveal";
 type Props = {
   title: string;
   subtitle: string;
-  placeholder: boolean;
   countries: readonly string[];
 };
 
-export function Missions({ title, subtitle, placeholder, countries }: Props) {
+export function Missions({ title, subtitle, countries }: Props) {
   return (
     <Section
       id="missions"
       title={title}
       subtitle={subtitle}
-      placeholder={placeholder}
       headingLevel="h1"
     >
       <RevealGroup

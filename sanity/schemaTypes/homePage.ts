@@ -145,12 +145,6 @@ export const homePage = defineType({
           rows: 2,
           validation: (rule) => rule.max(160),
         }),
-        defineField({
-          name: "showPlaceholderBadge",
-          title: "Show \"Placeholder content\" badge",
-          type: "boolean",
-          description: "Turn this off once real student stories are published below.",
-        }),
       ],
     }),
   ],

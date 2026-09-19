@@ -6,7 +6,6 @@ import { CheckCircle2, Mail, MapPin, Phone } from "lucide-react";
 import { org } from "@/lib/content";
 import { safeHref } from "@/lib/href";
 import { Section } from "./section";
-import { Socials } from "./socials";
 
 type Field = "name" | "email" | "phone" | "message";
 type Errors = Partial<Record<Field, string>>;
@@ -298,10 +297,6 @@ export function ContactSection({ title, subtitle }: Props) {
             </ul>
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold">Follow along</h3>
-            <Socials className="mt-4" />
-          </div>
         </div>
       </div>
     </Section>

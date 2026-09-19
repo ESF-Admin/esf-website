@@ -124,7 +124,6 @@ async function run() {
     testimonials: {
       title: testimonials.title,
       subtitle: testimonials.subtitle,
-      showPlaceholderBadge: testimonials.placeholder,
     },
   });
   // homePage may already exist from Phase 2, before `testimonials` existed.
@@ -133,7 +132,6 @@ async function run() {
       testimonials: {
         title: testimonials.title,
         subtitle: testimonials.subtitle,
-        showPlaceholderBadge: testimonials.placeholder,
       },
     },
   });
@@ -144,7 +142,6 @@ async function run() {
     slug: "ministries",
     title: ministries.title,
     intro: ministries.subtitle,
-    showPlaceholderBadge: ministries.placeholder,
     seo: seo("ministries"),
   });
   // page.ministries may already exist from Phase 2, when the ministries
@@ -153,7 +150,6 @@ async function run() {
   // backfill the new toggle if this document predates it.
   tx.patch("page.ministries", {
     unset: ["items"],
-    setIfMissing: { showPlaceholderBadge: ministries.placeholder },
   });
 
   tx.createIfNotExists({
@@ -162,12 +158,10 @@ async function run() {
     slug: "missions",
     title: missions.title,
     intro: missions.subtitle,
-    showPlaceholderBadge: missions.placeholder,
     seo: seo("missions"),
   });
   tx.patch("page.missions", {
     unset: ["countries"],
-    setIfMissing: { showPlaceholderBadge: missions.placeholder },
   });
 
   tx.createIfNotExists({
@@ -230,17 +224,6 @@ async function run() {
       _id: `missionCountry.${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       _type: "missionCountry",
       name,
-      order: (i + 1) * 10,
-    });
-  });
-
-  testimonials.items.forEach((t, i) => {
-    tx.createIfNotExists({
-      _id: `testimonial.${i + 1}`,
-      _type: "testimonial",
-      quote: t.quote,
-      name: t.name,
-      role: t.role,
       order: (i + 1) * 10,
     });
   });

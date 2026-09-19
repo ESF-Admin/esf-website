@@ -136,7 +136,7 @@ components/
 │                               renders the (Phase 5) rich-text statement via <RichText>
 │                               with a custom "normal" block style for its display type
 ├── contact-cta.tsx             Async server component — reads getHomePage().contactCta
-├── section.tsx                Shared section wrapper (title/subtitle/placeholder badge, h1|h2 toggle)
+├── section.tsx                Shared section wrapper (title/subtitle, h1|h2 toggle)
 ├── document-row.tsx           One bulletin/sermon row (shared by teaser + archive)
 ├── document-teaser.tsx        Homepage "latest 3" for bulletins/sermons
 ├── document-archive.tsx       Full /bulletins, /sermons page body
@@ -195,7 +195,7 @@ sanity/
 │                               genuinely repeatable, admin creates/deletes freely)
 └── schemaTypes/
     ├── {bulletin,sermon,siteSettings,navigation,homePage,page,ministry,testimonial,missionCountry,shared,index}.ts
-    └── objects/{ctaObject,seoObject,imageWithAlt,socialLink,navItem,richText}.ts
+    └── objects/{ctaObject,seoObject,imageWithAlt,navItem,richText}.ts
 
 scripts/
 ├── seed-bulletins.ts           One-time: migrates 33 hand-sourced bulletins

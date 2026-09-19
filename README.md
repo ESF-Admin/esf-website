@@ -23,10 +23,7 @@ npm run seed:bulletins   # one-time: push the original 33 bulletins into Sanity
 Most static copy lives in `lib/content.ts`.
 
 Real, verified ESF facts (`org`, `hero`, `story`, `mission`, contact details)
-are taken from the live site. The `sermons` and `testimonials` groups are
-**placeholder filler** — they carry `placeholder: true`, which renders a
-visible "Placeholder content" badge above the section. Replace the items and
-drop the flag before launch.
+are taken from the live site.
 
 **Bulletins are not in `content.ts`** — they're the one content type that
 changes weekly, so they live in Sanity instead of code. See "Bulletins CMS"

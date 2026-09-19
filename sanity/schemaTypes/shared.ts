@@ -6,7 +6,7 @@ import { apiVersion } from "../env";
  * anchor, or an external http(s)/mailto/tel link. Deliberately excludes
  * `javascript:` and any other scheme — this is the one thing standing
  * between "admin edits a link" and stored XSS, so every href field in the
- * schema (CTAs, nav items, social links, rich-text link marks) routes
+ * schema (CTAs, nav items, rich-text link marks) routes
  * through this pattern, and the render layer re-checks it again (schema
  * validation only runs in Studio, not against documents written via the
  * API/Vision).

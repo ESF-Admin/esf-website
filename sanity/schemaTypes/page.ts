@@ -43,19 +43,6 @@ export const page = defineType({
     }),
     ...pageCopyFields(),
 
-    // Ministries and Missions pages only — the lists themselves live in
-    // their own `ministry`/`missionCountry` documents (see
-    // lib/sanity/queries.ts's getMinistries()/getMissionCountries()); this
-    // just controls whether the page shows the "Placeholder content" badge.
-    defineField({
-      name: "showPlaceholderBadge",
-      title: "Show \"Placeholder content\" badge",
-      type: "boolean",
-      description: "Turn this off once the list below has real, final content.",
-      group: "content",
-      ...onlyFor("ministries", "missions"),
-    }),
-
     // History page only
     defineField({
       name: "paragraphs",

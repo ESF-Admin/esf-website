@@ -1,7 +1,6 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import { getSiteSettings, getNavigation } from "@/lib/sanity/queries";
 import { safeHref } from "@/lib/href";
-import { Socials } from "./socials";
 
 export async function Footer() {
   const [settings, navLinks] = await Promise.all([
@@ -28,7 +27,6 @@ export async function Footer() {
           <p className="mt-5 max-w-sm leading-relaxed text-muted-foreground text-pretty">
             {footerBlurb}
           </p>
-          <Socials className="mt-6" />
         </div>
 
         <nav aria-label="Footer">

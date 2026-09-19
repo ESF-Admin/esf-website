@@ -10,11 +10,10 @@ type Item = { quote: string; name: string; role: string };
 type Props = {
   title: string;
   subtitle: string;
-  placeholder: boolean;
   items: Item[];
 };
 
-export function TestimonialsClient({ title, subtitle, placeholder, items }: Props) {
+export function TestimonialsClient({ title, subtitle, items }: Props) {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const reduced = useReducedMotion();
@@ -28,7 +27,7 @@ export function TestimonialsClient({ title, subtitle, placeholder, items }: Prop
   const offset = reduced ? 0 : 40;
 
   return (
-    <Section id="stories" title={title} subtitle={subtitle} placeholder={placeholder} tinted>
+    <Section id="stories" title={title} subtitle={subtitle} tinted>
       <div
         role="group"
         aria-roledescription="carousel"
