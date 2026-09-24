@@ -5,7 +5,8 @@ import { parseBody } from "next-sanity/webhook";
 /**
  * Sanity publish webhook. Configure in the Sanity project dashboard:
  * Settings → API → Webhooks → POST to this route's deployed URL,
- * filter `_type == "bulletin"`, secret = SANITY_REVALIDATE_SECRET.
+ * no filter (every content type), projection `{_type}`,
+ * secret = SANITY_REVALIDATE_SECRET.
  */
 export async function POST(req: NextRequest) {
   try {

@@ -255,6 +255,24 @@ test.describe("ESF landing page", () => {
     await expect(page.getByRole("form", { name: "Contact form" })).toHaveCount(0);
   });
 
+  test("contact form shows a friendly notice when rate limited", async ({ page }) => {
+    // Plain-text 429, the way the Vercel Firewall rate-limit rule responds.
+    await page.route("/api/contact", (route) =>
+      route.fulfill({ status: 429, contentType: "text/plain", body: "Too Many Requests" }),
+    );
+    await page.goto("/contact");
+
+    const form = page.getByRole("form", { name: "Contact form" });
+    await form.getByLabel(/^Name/).fill("Sample Person");
+    await form.getByLabel(/^Email/).fill("person@example.com");
+    await form.getByLabel(/^Message/).fill("Hello, I would like to visit.");
+    await form.getByRole("button", { name: "Send message" }).click();
+
+    await expect(form.getByText("You've sent a few messages already")).toBeVisible();
+    // The typed message is kept so the visitor doesn't lose it.
+    await expect(form.getByLabel(/^Message/)).toHaveValue("Hello, I would like to visit.");
+  });
+
   test("testimonial carousel advances", async ({ page }) => {
     await page.goto("/");
 

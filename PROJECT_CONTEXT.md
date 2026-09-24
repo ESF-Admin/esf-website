@@ -385,8 +385,9 @@ create/duplicate/delete/unpublish for `siteSettings`, `navigation`,
 ## 12. Known limitations and next steps
 
 **Limitations**
-- The contact rate limit is in memory, per server instance, and resets on
-  cold start. reCAPTCHA is the main bot gate.
+- The in-app contact rate limit is in memory, per server instance, and
+  resets on cold start. The Vercel Firewall rate-limit rule (dashboard, not
+  in code) is the real cap; reCAPTCHA is the main bot gate.
 - Below-the-fold sections animate in with JavaScript and stay hidden without
   it.
 - The home page bulletins/sermons teaser headings (`lib/content.ts`) are
@@ -421,6 +422,8 @@ create/duplicate/delete/unpublish for `siteSettings`, `navigation`,
 ## 13. Changelog
 
 Newest first, one line per change. Full detail is in git history.
+
+- **2026-09-24**: Hosting on Vercel Pro, CMS on Sanity Growth. Vercel Firewall (WAF) custom rules added in the dashboard: rate limits on `POST /api/contact` and `/api/revalidate`, deny common exploit probes. Contact form shows a friendly "try again later" notice on any 429 (app or firewall) and keeps the typed message.
 
 - **2026-09-23**: Seeded `page`, `ministry` and `missionCountry` documents moved from dotted IDs (private in Sanity, never read by the site) to hyphenated IDs (`scripts/migrate-page-ids.ts`); Studio edits to pages, ministries and mission countries now reach the site. Sample testimonials not migrated.
 - **2026-09-23**: SEO pass: shared `siteUrl` (fixes `//` in sitemap/robots), Open Graph image and site name kept on inner pages, title template `%s | ESF – Evangelical Student Fellowship`, WebSite + Organization/Church JSON-LD, expanded keywords, richer page descriptions, robots blocks `/studio`, `/internal`, `/api/`, viewer pages `noindex, follow`.

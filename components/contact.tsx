@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import Script from "next/script";
-import { CheckCircle2, Mail, MapPin, Phone } from "lucide-react";
+import { CheckCircle2, Clock, Mail, MapPin, Phone } from "lucide-react";
 import { org } from "@/lib/content";
 import { safeHref } from "@/lib/href";
 import { Section } from "./section";
@@ -73,6 +73,7 @@ export function ContactSection({ title, subtitle }: Props) {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
 
@@ -104,6 +105,7 @@ export function ContactSection({ title, subtitle }: Props) {
     const found = validate(values);
     setErrors(found);
     setSendError(null);
+    setRateLimited(false);
 
     const first = (Object.keys(found) as Field[])[0];
     if (first) {
@@ -124,7 +126,14 @@ export function ContactSection({ title, subtitle }: Props) {
           recaptchaToken,
         }),
       });
-      const data: { ok?: boolean; error?: string } = await res.json();
+      // 429 can come from this route or from the Vercel Firewall rate-limit
+      // rule, whose response isn't JSON — so check status before parsing.
+      if (res.status === 429) {
+        setRateLimited(true);
+        setSent(false);
+        return;
+      }
+      const data: { ok?: boolean; error?: string } = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         setSendError(data.error || "Something went wrong. Please try again.");
         setSent(false);
@@ -250,6 +259,39 @@ export function ContactSection({ title, subtitle }: Props) {
                 marks a required field.
               </p>
             </div>
+
+            {rateLimited && (
+              <div
+                role="alert"
+                className="mt-6 flex gap-4 rounded-xl border border-border bg-surface-2 p-5"
+              >
+                <Clock aria-hidden className="mt-0.5 size-6 shrink-0 text-accent" />
+                <div className="text-sm">
+                  <p className="font-semibold text-foreground">
+                    You&apos;ve sent a few messages already
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    To keep spam out, the form can only be used a few times an
+                    hour. Your message is still here — please try again later,
+                    or reach us directly at{" "}
+                    <a
+                      href={safeHref(org.emailHref)}
+                      className="font-medium break-all text-foreground underline underline-offset-4 hover:text-accent"
+                    >
+                      {org.email}
+                    </a>{" "}
+                    or{" "}
+                    <a
+                      href={safeHref(org.phoneHref)}
+                      className="font-medium whitespace-nowrap text-foreground underline underline-offset-4 hover:text-accent"
+                    >
+                      {org.phone}
+                    </a>
+                    .
+                  </p>
+                </div>
+              </div>
+            )}
 
             {sendError && (
               <p role="alert" className="mt-6 text-sm font-medium text-destructive">
