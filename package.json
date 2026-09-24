@@ -14,7 +14,7 @@
     "seed:content": "sanity exec scripts/seed-content.ts --with-user-token",
     "upload:hero-video": "sanity exec scripts/upload-hero-video.ts --with-user-token --",
     "migrate:mission-statement": "sanity exec scripts/migrate-mission-statement.ts --with-user-token",
-    "sanity:schema": "sanity schemas extract --enforce-required-fields --force",
+    "sanity:schema": "sanity schemas extract --workspace default --enforce-required-fields --force",
     "sanity:typegen": "npm run sanity:schema && sanity typegen generate"
   },
   "dependencies": {

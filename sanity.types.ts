@@ -53,13 +53,6 @@ export type NavItem = {
   >;
 };
 
-export type SocialLink = {
-  _type: "socialLink";
-  name: "Facebook" | "X" | "YouTube" | "Instagram" | "LinkedIn";
-  href: string;
-  label: string;
-};
-
 export type SanityImageAssetReference = {
   _ref: string;
   _type: "reference";
@@ -135,7 +128,6 @@ export type Page = {
   title: string;
   intro?: string;
   seo?: Seo;
-  showPlaceholderBadge?: boolean;
   paragraphs?: Array<string>;
   milestones?: Array<{
     year: string;
@@ -185,7 +177,6 @@ export type HomePage = {
   testimonials?: {
     title: string;
     subtitle?: string;
-    showPlaceholderBadge?: boolean;
   };
 };
 
@@ -392,7 +383,6 @@ export type AllSanitySchemaTypes =
   | RichText
   | NavChildLink
   | NavItem
-  | SocialLink
   | SanityImageAssetReference
   | ImageWithAlt
   | Seo
@@ -504,7 +494,6 @@ export type SITE_SETTINGS_QUERY_RESULT =
       testimonials?: {
         title: string;
         subtitle?: string;
-        showPlaceholderBadge?: boolean;
       };
     }
   | {
@@ -556,7 +545,6 @@ export type SITE_SETTINGS_QUERY_RESULT =
       title: string;
       intro?: string;
       seo?: Seo;
-      showPlaceholderBadge?: boolean;
       paragraphs?: Array<string>;
       milestones?: Array<{
         year: string;
@@ -751,7 +739,6 @@ export type HOME_PAGE_QUERY_RESULT =
       testimonials?: {
         title: string;
         subtitle?: string;
-        showPlaceholderBadge?: boolean;
       };
     }
   | {
@@ -806,7 +793,6 @@ export type HOME_PAGE_QUERY_RESULT =
       title: string;
       intro?: string;
       seo?: Seo;
-      showPlaceholderBadge?: boolean;
       paragraphs?: Array<string>;
       milestones?: Array<{
         year: string;
@@ -939,7 +925,6 @@ export type PAGE_QUERY_RESULT = {
   title: string;
   intro?: string;
   seo?: Seo;
-  showPlaceholderBadge?: boolean;
   paragraphs?: Array<string>;
   milestones?: Array<{
     year: string;

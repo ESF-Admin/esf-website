@@ -1,100 +1,129 @@
-# Evangelical Student Fellowship — landing page
+# ESF Website
 
-Single-page marketing site for ESF, an international Christian student ministry
-founded in Seoul, Korea in 1976 and now also serving a multi-ethnic ministry in
-Chicago.
+The website for **Evangelical Student Fellowship (ESF)**, a Christian student
+ministry founded in Seoul, Korea in 1976 that now also serves a multi-ethnic
+ministry in Chicago.
 
-Next.js (App Router) · TypeScript · Tailwind CSS v4 · Motion (Framer Motion) ·
-Sanity (bulletins CMS) · Playwright.
+Visitors can read about ESF, find the Sunday service, read or download weekly
+bulletins and sermons, and send a message through the contact form. Church
+staff update all of this themselves in an online editor, with no code needed.
 
-## Commands
+---
+
+## For church staff: updating the website
+
+Everything on the site is edited at **`<site address>/studio`**. Sign in with
+the account you were invited with.
+
+**Publish this week's bulletin or sermon**
+
+1. Open **Bulletins** (or **Sermons**), pick the language, then click **Create new** (the pencil icon).
+2. Set the service date (and for sermons: title, scripture and speaker).
+3. Upload the Word file (`.docx`). Also upload a **PDF** copy if you have one,
+   because it opens much faster for visitors.
+4. Click **Publish**. The site updates within a few seconds.
+
+**Change other content:** use **Site settings** (phone, email, address, service
+time), **Navigation menu**, **Home page**, **Pages**, **Ministries**,
+**Mission countries** and **Student stories**. Student Stories stays hidden on
+the home page until at least one story is published.
+
+**Read contact form messages:** go to **`<site address>/internal`**. Every
+message is also emailed to the church inbox.
+
+---
+
+## For developers
+
+### What it's built with
+
+| Part | Tool |
+| --- | --- |
+| Website | [Next.js 16](https://nextjs.org) (App Router), React 19, TypeScript |
+| Styling | Tailwind CSS v4, Motion (animations), next-themes (light/dark) |
+| Content editor and file storage | [Sanity](https://www.sanity.io), embedded at `/studio` and `/internal` |
+| Contact form email | [Resend](https://resend.com), with Google reCAPTCHA v3 for spam protection |
+| Hosting and analytics | [Vercel](https://vercel.com). Every push to `main` deploys automatically. |
+| Tests | Playwright |
+
+### Run it locally
+
+You need Node.js 20 or newer.
 
 ```bash
-npm run dev            # local dev server on :3000
-npm run build           # production build
-npm run typecheck       # tsc --noEmit
-npm run lint             # eslint
-npm test                 # Playwright suite (builds + starts the app itself)
-npm run seed:bulletins   # one-time: push the original 33 bulletins into Sanity
+npm install
 ```
 
-## Content
+```bash
+cp .env.local.example .env.local
+```
 
-Most static copy lives in `lib/content.ts`.
+Fill in `.env.local` (see [Environment variables](#environment-variables)). At
+minimum you need `NEXT_PUBLIC_SANITY_PROJECT_ID` to see real content. Without
+it the site still runs, using the built-in default text from `lib/content.ts`.
 
-Real, verified ESF facts (`org`, `hero`, `story`, `mission`, contact details)
-are taken from the live site.
+```bash
+npm run dev
+```
 
-**Bulletins are not in `content.ts`** — they're the one content type that
-changes weekly, so they live in Sanity instead of code. See "Bulletins CMS"
-below.
+Then open http://localhost:3000.
 
-No imagery from the previous Wix site is used. The hero artwork is an inline
-SVG (`components/arch-art.tsx`) that inherits the theme tokens, so the page
-ships with no third-party image assets.
+### Commands
 
-## Bulletins CMS (Sanity)
-
-Every Sunday bulletin — date, title, scripture reference, and the `.docx`
-file itself — is a `bulletin` document in Sanity (schema at
-`sanity/schemaTypes/bulletin.ts`). This is what lets the church admin publish
-a new one every week without a developer or a deploy.
-
-**Weekly workflow (non-technical):**
-1. Go to `/studio` on the live site and log in.
-2. Click **Bulletin → Create new**.
-3. Fill in the service date, message title, scripture reference, and upload
-   the `.docx` file.
-4. Click **Publish**.
-5. Within a few seconds the entry appears at the top of `/bulletins` (sorted
-   by date, newest first) and in the homepage teaser — no redeploy needed.
-
-**One-time setup (developer):**
-1. Create a free project at [sanity.io/manage](https://sanity.io/manage) (or
-   run `npx sanity init` from this folder).
-2. Copy `.env.local.example` to `.env.local` and fill in
-   `NEXT_PUBLIC_SANITY_PROJECT_ID` / `NEXT_PUBLIC_SANITY_DATASET`.
-3. Run `npm run seed:bulletins` once to migrate the original 33 bulletins
-   (hand-sourced from esfworld.us/bulletin) into Sanity — they're created
-   without a file attached; upload each `.docx` from `/studio` afterward, or
-   leave older ones as-is (they render with a disabled "View" button, same as
-   before this migration).
-4. In the Sanity project dashboard: **API → Webhooks** → add one pointed at
-   `<your-deployed-url>/api/revalidate`, filtered to `_type == "bulletin"`,
-   with a secret — put that same secret in `SANITY_REVALIDATE_SECRET`. This
-   is what makes publishing show up on the site instantly instead of waiting
-   for the next natural cache expiry.
-
-**Viewing/downloading:** browsers can't render `.docx` natively, so "View"
-opens `/bulletins/view` which embeds the file via Microsoft's Office Online
-Viewer (`view.officeapps.live.com`), fed the file's public Sanity CDN URL —
-no conversion step. "Download" links straight to that same CDN URL. Until a
-document is uploaded, its "View" button is disabled.
-
-Until Sanity is configured, the site still builds and runs — `/bulletins` and
-the homepage teaser just render their "nothing published yet" empty state,
-and `/studio` shows Sanity's own "needs a projectId" error page.
-
-## Environment
-
-| Variable | Effect |
+| Command | What it does |
 | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | Canonical/OG base URL. Defaults to `https://esf.example.org`. |
-| `NEXT_PUBLIC_ALLOW_INDEXING` | `true` emits `index, follow`. Anything else (the default) keeps `noindex, nofollow`, matching the current live site. |
-| `NEXT_PUBLIC_SANITY_PROJECT_ID` / `NEXT_PUBLIC_SANITY_DATASET` | Sanity project connection — see "Bulletins CMS" above. |
-| `SANITY_REVALIDATE_SECRET` | Shared secret for the Sanity → `/api/revalidate` webhook. |
+| `npm run dev` | Start the local dev server on port 3000 |
+| `npm run build` / `npm start` | Build and run the production version |
+| `npm run typecheck` | Check TypeScript types |
+| `npm run lint` | Check code style |
+| `npm test` | Run the Playwright tests. Stop `npm run dev` first, because the tests start their own server. |
+| `npm run sanity:typegen` | Regenerate `sanity.types.ts` after changing a Sanity schema |
+| `npm run seed:content` | Fill a new, empty Sanity project with the default content (safe to re-run) |
+| `npm run upload:hero-video -- --video=clip.mp4 --poster=frame.jpg` | Upload or replace the home page background video |
 
-## Theming
+### Project layout
 
-Colour tokens are CSS custom properties in `app/globals.css`, with a `.dark`
-override applied by `next-themes`. `--band` / `--on-band` are deliberately
-separate from `--primary` so the full-bleed mission section stays deep navy in
-both themes.
+```text
+app/          Pages and API routes. Each folder is a URL, e.g. app/sermons → /sermons
+components/   The building blocks of each page (nav, hero, footer, PDF viewer…)
+lib/          Data fetching from Sanity, default text (content.ts), helpers
+sanity/       Content editor setup: what fields each content type has
+scripts/      One-off Sanity scripts (seeding content, uploading the hero video)
+tests/        Playwright tests
+public/       Static files
+```
+
+A fuller technical reference (architecture, data model, security, decisions)
+is in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+
+### Environment variables
+
+Set these in `.env.local` for local work, and in the Vercel project settings for
+the live site. `.env.local.example` explains each one. Every service is
+optional locally, and the site keeps working without it.
+
+| Variable | Needed for |
+| --- | --- |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SANITY_API_VERSION` | Loading content from Sanity |
+| `SANITY_REVALIDATE_SECRET` | Instant updates after publishing in Studio |
+| `SANITY_INTERNAL_TOKEN` | Saving contact form messages to the private `internal` dataset |
+| `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL` | Sending contact form email |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY` | Contact form spam protection |
+| `NEXT_PUBLIC_SITE_URL` | The site's public address, used in links and share previews (default `https://esfworld.us`) |
+| `NEXT_PUBLIC_ALLOW_INDEXING` | Set to `true` to let search engines index the site (off by default) |
+
+### Deploying
+
+Push to `main` and Vercel builds and publishes it. Content changes made in
+Studio don't need a deploy.
+
+---
 
 ## Known gaps
 
-- The contact form validates client-side and shows a success state, but does
-  not POST anywhere yet. Wire it to `/api/contact` (or a form service) in
-  `components/contact.tsx`.
-- Scroll-triggered sections start at `opacity: 0` and are revealed by JS, so
-  the page below the fold is blank with JavaScript disabled.
+- The `esfworld.us` domain is bought but not yet connected to Vercel, and
+  search engine indexing is off until it is.
+- Spanish and French bulletins and sermons are supported, but none have been
+  published yet.
+- Sections further down the page fade in with JavaScript, so they stay hidden
+  if JavaScript is turned off.

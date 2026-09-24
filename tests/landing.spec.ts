@@ -249,6 +249,8 @@ test.describe("ESF landing page", () => {
     await page.goto("/");
 
     const carousel = page.getByRole("group", { name: "Student stories" });
+    // Section is hidden until real testimonials are published in Studio.
+    test.skip((await carousel.count()) === 0, "no testimonials published");
     await carousel.scrollIntoViewIfNeeded();
 
     const first = await carousel.locator("blockquote p").first().innerText();

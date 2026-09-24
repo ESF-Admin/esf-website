@@ -13,7 +13,7 @@ const MAX_PHONE = 30;
 const MAX_MESSAGE = 5000;
 const MIN_MESSAGE = 10;
 
-// ponytail: in-memory rate limit — resets on cold start and isn't shared
+// Note: in-memory rate limit — resets on cold start and isn't shared
 // across serverless instances, so it's a soft "slow down a bot on this
 // instance" guard, not a hard cap. Kept as a cheap backup now that
 // reCAPTCHA below is the real bot gate — a bot that fails reCAPTCHA never
