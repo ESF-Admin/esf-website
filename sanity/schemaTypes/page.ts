@@ -22,7 +22,8 @@ function onlyFor(...slugs: (typeof PAGE_SLUGS)[number][]) {
  * One document type for every simple content page (ministries, missions,
  * history, contact, bulletins, sermons) rather than six near-identical
  * singletons — each is keyed by a fixed, readOnly `slug` (deterministic
- * `_id`s like "page.history", seeded by scripts/seed-content.ts) and
+ * `_id`s like "page-history", seeded by scripts/seed-content.ts; no dots,
+ * since Sanity treats dotted IDs as private and the public client can't read them) and
  * locked against duplicate/delete in sanity.config.ts, same as a true
  * singleton. Page-specific fields (ministries' items, history's timeline)
  * are hidden unless editing that page, via `onlyFor()`.

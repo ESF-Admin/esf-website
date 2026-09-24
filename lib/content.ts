@@ -222,26 +222,30 @@ export const pageSeoDefaults = {
   ministries: {
     title: "Ministries",
     description:
-      "Ways to get plugged in at ESF — Young Adults, Evangelism, Bible Studies, and Youth & Children.",
+      "Get involved at Evangelical Student Fellowship in Chicago: Young Adults, Evangelism, Bible Studies, and Youth & Children ministries.",
   },
   missions: {
     title: "Missions",
-    description: "Countries where ESF and its partners serve.",
+    description:
+      "Where ESF and its partners serve: Benin, Cuba, the Dominican Republic, Peru, the Philippines, the United States and Venezuela.",
   },
   history: {
-    title: "History",
-    description: "How ESF began in Seoul, Korea in 1976, and how it came to Chicago.",
+    title: "Our History",
+    description:
+      "Evangelical Student Fellowship began in Seoul, Korea in 1976 and came to the U.S. through its alumni. Today ESF is a multi-ethnic ministry in Chicago.",
   },
   contact: {
-    title: "Contact",
-    description: "Reach ESF by phone, email, or the contact form.",
+    title: "Contact Us",
+    description: `Visit Evangelical Student Fellowship at ${org.address}. ${service.day} worship at ${service.time}. Call, email, or send us a message.`,
   },
   bulletins: {
-    title: "Bulletins",
-    description: "The full archive of ESF Sunday service bulletins, most recent first.",
+    title: "Sunday Bulletins",
+    description:
+      "Weekly Sunday service bulletins from Evangelical Student Fellowship in Chicago, in English, Spanish and French. Read online or download.",
   },
   sermons: {
     title: "Sermons",
-    description: "The full archive of ESF Sunday sermon messages, most recent first.",
+    description:
+      "Sunday sermon messages from Evangelical Student Fellowship in Chicago. Read online or download, newest first.",
   },
 } as const;

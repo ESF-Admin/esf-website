@@ -137,35 +137,35 @@ async function run() {
   });
 
   tx.createIfNotExists({
-    _id: "page.ministries",
+    _id: "page-ministries",
     _type: "page",
     slug: "ministries",
     title: ministries.title,
     intro: ministries.subtitle,
     seo: seo("ministries"),
   });
-  // page.ministries may already exist from Phase 2, when the ministries
+  // page-ministries may already exist from Phase 2, when the ministries
   // list itself lived inline as `items` — now it's its own document type
   // (see the `ministry` documents below), so drop the stale field and
   // backfill the new toggle if this document predates it.
-  tx.patch("page.ministries", {
+  tx.patch("page-ministries", {
     unset: ["items"],
   });
 
   tx.createIfNotExists({
-    _id: "page.missions",
+    _id: "page-missions",
     _type: "page",
     slug: "missions",
     title: missions.title,
     intro: missions.subtitle,
     seo: seo("missions"),
   });
-  tx.patch("page.missions", {
+  tx.patch("page-missions", {
     unset: ["countries"],
   });
 
   tx.createIfNotExists({
-    _id: "page.history",
+    _id: "page-history",
     _type: "page",
     slug: "history",
     eyebrow: story.tagline,
@@ -176,7 +176,7 @@ async function run() {
   });
 
   tx.createIfNotExists({
-    _id: "page.contact",
+    _id: "page-contact",
     _type: "page",
     slug: "contact",
     title: contact.title,
@@ -185,7 +185,7 @@ async function run() {
   });
 
   tx.createIfNotExists({
-    _id: "page.bulletins",
+    _id: "page-bulletins",
     _type: "page",
     slug: "bulletins",
     eyebrow: "Bulletin archive",
@@ -197,7 +197,7 @@ async function run() {
   });
 
   tx.createIfNotExists({
-    _id: "page.sermons",
+    _id: "page-sermons",
     _type: "page",
     slug: "sermons",
     eyebrow: "Sermon archive",
@@ -210,7 +210,7 @@ async function run() {
 
   ministries.items.forEach((m, i) => {
     tx.createIfNotExists({
-      _id: `ministry.${m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      _id: `ministry-${m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       _type: "ministry",
       name: m.name,
       body: m.body,
@@ -221,7 +221,7 @@ async function run() {
 
   missions.countries.forEach((name, i) => {
     tx.createIfNotExists({
-      _id: `missionCountry.${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      _id: `missionCountry-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       _type: "missionCountry",
       name,
       order: (i + 1) * 10,

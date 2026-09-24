@@ -109,7 +109,7 @@ optional locally, and the site keeps working without it.
 | `SANITY_INTERNAL_TOKEN` | Saving contact form messages to the private `internal` dataset |
 | `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL` | Sending contact form email |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY` | Contact form spam protection |
-| `NEXT_PUBLIC_SITE_URL` | The site's public address, used in links and share previews (default `https://esfworld.us`) |
+| `NEXT_PUBLIC_SITE_URL` | The site's public address, used in links and share previews (default `https://www.esfworld.us`, no trailing slash) |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | Set to `true` to let search engines index the site (off by default) |
 
 ### Deploying
@@ -121,8 +121,10 @@ Studio don't need a deploy.
 
 ## Known gaps
 
-- The `esfworld.us` domain is bought but not yet connected to Vercel, and
-  search engine indexing is off until it is.
+- `www.esfworld.us` points at Vercel, but search engines are still told not
+  to index the site. To go live in search, set `NEXT_PUBLIC_SITE_URL` to
+  `https://www.esfworld.us` and `NEXT_PUBLIC_ALLOW_INDEXING` to `true` in
+  Vercel, then redeploy.
 - Spanish and French bulletins and sermons are supported, but none have been
   published yet.
 - Sections further down the page fade in with JavaScript, so they stay hidden

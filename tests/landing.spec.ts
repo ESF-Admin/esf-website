@@ -16,14 +16,13 @@ test.describe("ESF landing page", () => {
   test("loads with correct title and meta", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page).toHaveTitle(
-      /Evangelical Student Fellowship \(ESF\) — Campus Ministry/,
-    );
+    // Exact wording is editable in Studio; the brand name must stay in it.
+    await expect(page).toHaveTitle(/Evangelical Student Fellowship \(ESF\)/);
 
     const description = page.locator('meta[name="description"]');
     await expect(description).toHaveAttribute(
       "content",
-      /international Christian student ministry/,
+      /Christian/,
     );
 
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
@@ -38,6 +37,17 @@ test.describe("ESF landing page", () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
       "content",
       /noindex/,
+    );
+  });
+
+  test("inner pages keep brand title, canonical and share image", async ({ page }) => {
+    await page.goto("/history");
+    await expect(page).toHaveTitle(/\| ESF – Evangelical Student Fellowship$/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/history$/);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /opengraph-image/);
+    await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
+      "content",
+      "Evangelical Student Fellowship",
     );
   });
 

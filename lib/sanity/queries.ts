@@ -151,9 +151,9 @@ export type SiteSettings = {
 };
 
 const DEFAULT_SEO = {
-  title: `${org.name} (ESF) — Campus Ministry`,
+  title: `${org.name} (ESF) | Chicago Church & Campus Ministry`,
   description:
-    "Evangelical Student Fellowship is an international Christian student ministry on college and university campuses worldwide, and a multi-ethnic ministry in Chicago. Founded in Seoul, Korea in 1976.",
+    "Evangelical Student Fellowship (ESF) is a multi-ethnic church and Christian campus ministry in Chicago, founded in Seoul, Korea in 1976. Join us Sundays at 11:30 AM.",
 };
 
 /**

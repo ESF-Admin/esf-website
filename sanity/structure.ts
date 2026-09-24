@@ -81,7 +81,7 @@ export const structure: StructureResolver = (S) =>
             .title("Pages")
             .items(
               PAGES.map(([slug, title]) =>
-                singleton(S, `page.${slug}`, title, "page"),
+                singleton(S, `page-${slug}`, title, "page"),
               ),
             ),
         ),

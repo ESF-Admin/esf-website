@@ -3,6 +3,7 @@ import { Outfit, Work_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSiteSettings } from "@/lib/sanity/queries";
+import { allowIndexing, openGraphBase, siteKeywords, siteUrl } from "@/lib/seo";
 import "./globals.css";
 
 const heading = Outfit({
@@ -17,12 +18,6 @@ const body = Work_Sans({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://esfworld.us";
-
-// The legacy Wix site ships `noindex`. Indexing stays off until
-// NEXT_PUBLIC_ALLOW_INDEXING=true is set for the production deploy.
-const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";
-
 export async function generateMetadata(): Promise<Metadata> {
   const { org, defaultSeo } = await getSiteSettings();
   const { title, description } = defaultSeo;
@@ -31,30 +26,15 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(siteUrl),
     title: {
       default: title,
-      template: `%s | ${org.shortName}`,
+      template: `%s | ${org.shortName} – ${org.name}`,
     },
     description,
     applicationName: org.name,
-    keywords: [
-      "campus ministry",
-      "Christian student fellowship",
-      "ESF",
-      "Chicago",
-      "Bible study",
-      "college ministry",
-    ],
-    alternates: { canonical: "/" },
+    keywords: siteKeywords,
     robots: allowIndexing
-      ? { index: true, follow: true }
+      ? { index: true, follow: true, googleBot: { "max-image-preview": "large", "max-snippet": -1 } }
       : { index: false, follow: false },
-    openGraph: {
-      type: "website",
-      url: siteUrl,
-      siteName: org.name,
-      title,
-      description,
-      locale: "en_US",
-    },
+    openGraph: { ...openGraphBase, siteName: org.name, url: "/", title, description },
     twitter: {
       card: "summary_large_image",
       title,

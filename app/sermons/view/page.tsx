@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { DocumentViewer } from "@/components/document-viewer";
 
-export const metadata: Metadata = { title: "Sermon" };
+// Thin wrapper around one file, reached with a ?src= query: keep it out of
+// search results but let crawlers follow its links.
+export const metadata: Metadata = { title: "Sermon", robots: { index: false, follow: true } };
 
 export default async function SermonViewPage({
   searchParams,
