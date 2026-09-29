@@ -24,6 +24,8 @@ const PAGES: [string, string][] = [
   ["contact", "Contact page"],
   ["bulletins", "Bulletins page"],
   ["sermons", "Sermons page"],
+  ["privacy", "Privacy Policy page"],
+  ["terms", "Terms of Use page"],
 ];
 
 /** A list item that opens straight into one fixed-id document, skipping the "which one?" list singletons don't need. */

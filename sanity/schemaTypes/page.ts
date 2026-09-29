@@ -8,7 +8,11 @@ const PAGE_SLUGS = [
   "contact",
   "bulletins",
   "sermons",
+  "privacy",
+  "terms",
 ] as const;
+
+const LEGAL_SLUGS: string[] = ["privacy", "terms"];
 
 /** Only shows a field in Studio when editing the page(s) it actually applies to. */
 function onlyFor(...slugs: (typeof PAGE_SLUGS)[number][]) {
@@ -20,8 +24,8 @@ function onlyFor(...slugs: (typeof PAGE_SLUGS)[number][]) {
 
 /**
  * One document type for every simple content page (ministries, missions,
- * history, contact, bulletins, sermons) rather than six near-identical
- * singletons — each is keyed by a fixed, readOnly `slug` (deterministic
+ * history, contact, bulletins, sermons, privacy, terms) rather than eight
+ * near-identical singletons — each is keyed by a fixed, readOnly `slug` (deterministic
  * `_id`s like "page-history", seeded by scripts/seed-content.ts; no dots,
  * since Sanity treats dotted IDs as private and the public client can't read them) and
  * locked against duplicate/delete in sanity.config.ts, same as a true
@@ -88,6 +92,32 @@ export const page = defineType({
       description: "Shown when a language has no published entries yet.",
       group: "content",
       ...onlyFor("bulletins", "sermons"),
+    }),
+
+    // Privacy Policy / Terms of Use pages only
+    defineField({
+      name: "lastUpdated",
+      title: "Last updated",
+      type: "date",
+      description: "Shown at the top of the page. Change it whenever you edit the text below.",
+      group: "content",
+      ...onlyFor("privacy", "terms"),
+      // Hidden fields still validate, so only require it on the legal pages.
+      validation: (rule) =>
+        rule.custom((value, { document }) =>
+          value || !LEGAL_SLUGS.includes(document?.slug as string)
+            ? true
+            : "Required.",
+        ),
+    }),
+    defineField({
+      name: "body",
+      title: "Policy text",
+      type: "richText",
+      description:
+        'Use the "Heading" style for each section title. If the website starts using a new service (newsletter, donations, video embeds, new analytics), update this text too.',
+      group: "content",
+      ...onlyFor("privacy", "terms"),
     }),
   ],
   preview: {

@@ -324,8 +324,8 @@ export async function getHomePage(): Promise<HomePage> {
 const PAGE_QUERY = defineQuery(`*[_type == "page" && slug == $slug][0]`);
 
 /**
- * One of the six simple content pages (ministries, missions, history,
- * contact, bulletins, sermons) — the matching `page` document, merged
+ * One of the eight simple content pages (ministries, missions, history,
+ * contact, bulletins, sermons, privacy, terms) — the matching `page` document, merged
  * over a caller-supplied fallback shaped like that page's current
  * lib/content.ts values. Generic because each page's extra fields differ
  * (ministries' `items`, history's `milestones`, etc.) — see sanity/schemaTypes/page.ts.

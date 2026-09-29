@@ -260,6 +260,17 @@ export function ContactSection({ title, subtitle }: Props) {
               </p>
             </div>
 
+            <p className="mt-4 text-sm text-muted-foreground">
+              We use your details only to reply to you. See our{" "}
+              <a
+                href="/privacy"
+                className="font-medium text-foreground underline underline-offset-4 hover:text-accent"
+              >
+                Privacy Policy
+              </a>
+              .
+            </p>
+
             {rateLimited && (
               <div
                 role="alert"

@@ -35,11 +35,11 @@ test.describe("Bulletins archive page", () => {
     await expect(
       page.getByText(/no bulletins have been published in this language yet/i),
     ).not.toBeVisible();
-    // At least one real entry rendered — checked structurally (a document
-    // row's title heading), not against a specific bulletin's title/date,
-    // since new bulletins are published weekly and old ones may roll off
-    // the current page.
-    await expect(page.getByRole("heading", { level: 3 }).first()).toBeVisible();
+    // At least one real entry rendered — checked structurally (a bulletin
+    // row shows only its date, e.g. "September 28, 2026"), not against a
+    // specific date, since new bulletins are published weekly and old ones
+    // may roll off the current page.
+    await expect(page.getByText(/^[A-Z][a-z]+ \d{1,2}, \d{4}$/).first()).toBeVisible();
   });
 
   test("Spanish and French show the not-yet-published empty state", async ({

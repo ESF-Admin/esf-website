@@ -1,12 +1,19 @@
 import { test, expect, type Page } from "@playwright/test";
 
+/** A bulletin row's date, e.g. "September 28, 2026". */
+const BULLETIN_DATE = /^[A-Z][a-z]+ \d{1,2}, \d{4}$/;
+
 const NAV = ["Home", "Bulletins", "Ministries", "Missions", "Sermons", "History"];
 
 /** Collects console errors and page errors from load onward. */
 function watchErrors(page: Page) {
   const errors: string[] = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error") errors.push(msg.text());
+    if (msg.type() !== "error") return;
+    // Vercel Analytics/Speed Insights scripts only exist on Vercel; under a
+    // local `next start` they 404 (and get refused as text/plain).
+    if (`${msg.text()} ${msg.location().url}`.includes("/_vercel/")) return;
+    errors.push(msg.text());
   });
   page.on("pageerror", (err) => errors.push(err.message));
   return errors;
@@ -98,7 +105,8 @@ test.describe("ESF landing page", () => {
     await expect(
       section.getByText(/bulletins will appear here once published/i),
     ).not.toBeVisible();
-    await expect(section.getByRole("heading", { level: 3 }).first()).toBeVisible();
+    // Bulletin rows show only their date (no title heading).
+    await expect(section.getByText(BULLETIN_DATE).first()).toBeVisible();
 
     await section.getByRole("link", { name: /view the full bulletin archive/i }).click();
     await expect(page).toHaveURL(/\/bulletins\?lang=en$/);
@@ -304,7 +312,10 @@ test.describe("ESF landing page", () => {
 
   test("no console errors on load", async ({ page }) => {
     const errors = watchErrors(page);
-    await page.goto("/", { waitUntil: "networkidle" });
+    // Not "networkidle": the hero background video keeps streaming, so the
+    // network never goes idle. Wait for load, then give hydration a moment.
+    await page.goto("/", { waitUntil: "load" });
+    await page.waitForTimeout(1_000);
     expect(errors).toEqual([]);
   });
 });

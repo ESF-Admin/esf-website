@@ -86,9 +86,25 @@ export async function Footer() {
       </div>
 
       <div className="border-t border-border">
-        <p className="mx-auto w-full max-w-6xl px-5 py-6 text-sm text-muted-foreground sm:px-8">
-          © {org.copyrightYear} {org.legalFooterName}
-        </p>
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-6 text-sm text-muted-foreground sm:px-8">
+          <p>
+            © {org.copyrightYear} {org.legalFooterName}
+          </p>
+          <nav aria-label="Legal">
+            <ul className="flex flex-wrap gap-x-6 gap-y-2">
+              <li>
+                <a href="/privacy" className="transition-colors duration-200 hover:text-foreground">
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a href="/terms" className="transition-colors duration-200 hover:text-foreground">
+                  Terms of Use
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
       </div>
     </footer>
   );
