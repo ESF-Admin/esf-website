@@ -1,6 +1,6 @@
 /**
- * Seeds the siteSettings, navigation and homePage singletons, the six
- * `page` documents (ministries/missions/history/contact/bulletins/sermons),
+ * Seeds the siteSettings, navigation and homePage singletons, the eight
+ * `page` documents (ministries/missions/history/contact/bulletins/sermons/privacy/terms),
  * and the repeatable `ministry`/`missionCountry`/`testimonial` documents —
  * from lib/content.ts's current defaults, so every CMS document starts out
  * identical to what the site already renders. Safe to re-run
@@ -25,7 +25,10 @@ import {
   contact,
   testimonials,
   pageSeoDefaults,
+  privacyPolicy,
+  termsOfUse,
 } from "../lib/content";
+import { sectionsToBlocks } from "../lib/sanity/portable-text";
 
 // Same positional assignment components/ministries.tsx used before real
 // `icon` fields existed — only used here, to seed the 4 sample ministries.
@@ -207,6 +210,20 @@ async function run() {
     emptyText: "No sermons have been published in this language yet.",
     seo: seo("sermons"),
   });
+
+  for (const [slug, doc] of [["privacy", privacyPolicy], ["terms", termsOfUse]] as const) {
+    tx.createIfNotExists({
+      _id: `page-${slug}`,
+      _type: "page",
+      slug,
+      eyebrow: doc.eyebrow,
+      title: doc.title,
+      intro: doc.intro,
+      lastUpdated: doc.lastUpdated,
+      body: sectionsToBlocks(doc.sections),
+      seo: seo(slug),
+    });
+  }
 
   ministries.items.forEach((m, i) => {
     tx.createIfNotExists({

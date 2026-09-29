@@ -29,7 +29,16 @@ time), **Navigation menu**, **Home page**, **Pages**, **Ministries**,
 the home page until at least one story is published.
 
 **Read contact form messages:** go to **`<site address>/internal`**. Every
-message is also emailed to the church inbox.
+message is also emailed to the church inbox. If someone asks us to delete
+their message, delete it there and in the church inbox (the Privacy Policy
+promises this).
+
+**Privacy Policy and Terms of Use:** edit them under **Pages → Privacy Policy
+page** and **Pages → Terms of Use page**. Whenever you change the text, also
+change **Last updated**. If the website starts using something new that
+collects information (a newsletter, online giving, video embeds, another
+analytics tool), update the Privacy Policy before it goes live. The text is a
+general template, not legal advice; have church leadership review it.
 
 ---
 

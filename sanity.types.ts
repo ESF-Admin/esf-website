@@ -123,7 +123,14 @@ export type Page = {
   _updatedAt: string;
   _rev: string;
   slug:
-    "ministries" | "missions" | "history" | "contact" | "bulletins" | "sermons";
+    | "ministries"
+    | "missions"
+    | "history"
+    | "contact"
+    | "bulletins"
+    | "sermons"
+    | "privacy"
+    | "terms";
   eyebrow?: string;
   title: string;
   intro?: string;
@@ -137,6 +144,8 @@ export type Page = {
   }>;
   tabsLabel?: string;
   emptyText?: string;
+  lastUpdated?: string;
+  body?: RichText;
 };
 
 export type SanityFileAssetReference = {
@@ -540,7 +549,9 @@ export type SITE_SETTINGS_QUERY_RESULT =
         | "history"
         | "ministries"
         | "missions"
-        | "sermons";
+        | "privacy"
+        | "sermons"
+        | "terms";
       eyebrow?: string;
       title: string;
       intro?: string;
@@ -554,6 +565,8 @@ export type SITE_SETTINGS_QUERY_RESULT =
       }>;
       tabsLabel?: string;
       emptyText?: string;
+      lastUpdated?: string;
+      body?: RichText;
     }
   | {
       _id: "siteSettings";
@@ -788,7 +801,9 @@ export type HOME_PAGE_QUERY_RESULT =
         | "history"
         | "ministries"
         | "missions"
-        | "sermons";
+        | "privacy"
+        | "sermons"
+        | "terms";
       eyebrow?: string;
       title: string;
       intro?: string;
@@ -802,6 +817,8 @@ export type HOME_PAGE_QUERY_RESULT =
       }>;
       tabsLabel?: string;
       emptyText?: string;
+      lastUpdated?: string;
+      body?: RichText;
       hero: null;
     }
   | {
@@ -920,7 +937,14 @@ export type PAGE_QUERY_RESULT = {
   _updatedAt: string;
   _rev: string;
   slug:
-    "bulletins" | "contact" | "history" | "ministries" | "missions" | "sermons";
+    | "bulletins"
+    | "contact"
+    | "history"
+    | "ministries"
+    | "missions"
+    | "privacy"
+    | "sermons"
+    | "terms";
   eyebrow?: string;
   title: string;
   intro?: string;
@@ -934,6 +958,8 @@ export type PAGE_QUERY_RESULT = {
   }>;
   tabsLabel?: string;
   emptyText?: string;
+  lastUpdated?: string;
+  body?: RichText;
 } | null;
 
 // Source: lib/sanity/queries.ts
